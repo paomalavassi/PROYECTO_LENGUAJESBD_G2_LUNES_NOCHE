@@ -1,0 +1,243 @@
+body {
+    background-color: #ffffff;
+    color: #3a3838;
+    font-family: Arial, Helvetica, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+header {
+    text-align: center;
+    padding: 12px 0;
+    background-color: #798bb5;
+    color: #ffffff;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 1.5em;
+}
+
+header p {
+    margin: 4px 0 0 0;
+    font-size: 0.9em;
+}
+
+footer {
+    text-align: center;
+    padding: 10px 0;
+    background-color: #d6d2d2;
+    color: #444343;
+    font-size: 0.9em;
+    margin-top: 30px;
+}
+
+.navbar {
+    background-color: #798bb5 !important;
+}
+
+.navbar-brand {
+    color: #ffffff !important;
+    font-weight: bold;
+}
+
+.nav-link {
+    color: #dce6f0 !important;
+}
+
+.nav-link:hover,
+.nav-link.activo {
+    color: #ffffff !important;
+    background-color: #1a3a5c !important;
+    border-radius: 4px;
+}
+
+.seccion {
+    display: none;
+    padding: 20px;
+}
+
+.seccion.activa {
+    display: block;
+}
+
+.contenedor-principal {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.bloque-tabla {
+    flex: 2;
+    min-width: 300px;
+}
+
+.bloque-formulario {
+    flex: 1;
+    min-width: 260px;
+    background-color: #ffffff;
+    border: 1px solid #d1cdcd;
+    border-radius: 4px;
+    padding: 20px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #ffffff;
+    margin-bottom: 10px;
+}
+
+th,
+td {
+    border: 1px solid #d1cdcd;
+    padding: 8px;
+    text-align: left;
+    font-size: 0.9em;
+}
+
+th {
+    background-color: #798bb5;
+    color: #ffffff;
+}
+
+tbody tr:hover {
+    background-color: #edf1f9;
+}
+
+.bloque-formulario h3 {
+    margin-top: 0;
+    font-size: 1.1em;
+    border-bottom: 1px solid #d1cece;
+    padding-bottom: 8px;
+}
+
+.bloque-formulario form {
+    display: flex;
+    flex-direction: column;
+}
+
+.bloque-formulario label {
+    font-size: 0.88em;
+    margin-top: 6px;
+    font-weight: bold;
+}
+
+.bloque-formulario input[type="text"],
+.bloque-formulario input[type="number"],
+.bloque-formulario input[type="date"],
+.bloque-formulario input[type="time"],
+.bloque-formulario select,
+.bloque-formulario textarea {
+    padding: 5px;
+    margin-bottom: 6px;
+    border: 1px solid #c1bebe;
+    border-radius: 3px;
+    font-size: 0.9em;
+    width: 100%;
+}
+
+.bloque-formulario textarea {
+    resize: vertical;
+    height: 70px;
+}
+
+.bloque-formulario button[type="submit"] {
+    padding: 8px;
+    background-color: #798bb5;
+    color: #ffffff;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-top: 5px;
+}
+
+.bloque-formulario button[type="submit"]:hover {
+    background-color: #798bb5;
+}
+
+.btn-limpiar {
+    padding: 6px;
+    background-color: #918f8f;
+    color: #ffffff;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-top: 4px;
+}
+
+.btn-limpiar:hover {
+    background-color: #676363;
+}
+
+.btn-editar {
+    padding: 4px 8px;
+    background-color: #2c7a3a;
+    color: #ffffff;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.8em;
+}
+
+.btn-editar:hover {
+    background-color: #1e5728;
+}
+
+.resumen-inicio {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.tarjeta-resumen {
+    background-color: #ffffff;
+    border: 1px solid #d4c7c7;
+    border-radius: 4px;
+    padding: 20px;
+    flex: 1;
+    min-width: 150px;
+    text-align: center;
+}
+
+.tarjeta-resumen h3 {
+    margin: 0;
+    font-size: 2em;
+    color: #1a3a5c;
+}
+
+.tarjeta-resumen p {
+    margin: 5px 0 0 0;
+    font-size: 0.9em;
+    color: #666;
+}
+
+.mensaje-error {
+    color: rgb(194, 28, 28);
+    font-size: 0.85em;
+    display: none;
+}
+
+.mensaje-exito {
+    color: rgb(27, 131, 27);
+    font-size: 0.85em;
+    display: none;
+}
+
+.estado-activo {
+    color: rgb(27, 131, 27);
+    font-weight: bold;
+}
+
+.estado-pendiente {
+    color: rgb(225, 153, 17);
+    font-weight: bold;
+}
+
+.estado-inactivo {
+    color: rgb(194, 28, 28);
+    font-weight: bold;
+}

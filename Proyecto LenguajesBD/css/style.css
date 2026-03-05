@@ -1,0 +1,117 @@
+body {
+    background-color: #ffffff;
+    color: #3a3838;
+    font-family: Arial, Helvetica, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+header {
+    text-align: center;
+    padding: 15px 0;
+    background-color: #9a6a30;
+    color: #ffffff;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 1.8em;
+}
+
+header h2 {
+    margin: 5px 0 0 0;
+    font-size: 1.1em;
+    font-weight: normal;
+}
+
+footer {
+    text-align: center;
+    padding: 10px 0;
+    background-color: #d6d2d2;
+    color: #444343;
+    font-size: 0.9em;
+    margin-top: 30px;
+}
+
+.seccion-login {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.seccion-login h2 {
+    margin-bottom: 5px;
+}
+
+.contenedor-roles {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-top: 30px;
+    flex-wrap: wrap;
+}
+
+.card-rol {
+    background-color: #ffffff;
+    border: 1px solid #a39f9f;
+    border-radius: 5px;
+    padding: 30px;
+    width: 300px;
+    text-align: left;
+}
+
+.card-rol h3 {
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.card-rol p {
+    text-align: center;
+    color: #6a6969;
+    font-size: 0.9em;
+    margin-bottom: 20px;
+}
+
+.card-rol form {
+    display: flex;
+    flex-direction: column;
+}
+
+.card-rol label {
+    font-size: 0.9em;
+    margin-top: 5px;
+}
+
+.card-rol input[type="text"],
+.card-rol input[type="password"] {
+    padding: 6px;
+    margin-bottom: 10px;
+    border: 1px solid #a09e9e;
+    border-radius: 3px;
+    width: 100%;
+}
+
+.card-rol button {
+    padding: 8px;
+    background-color: #9a6a30;
+    color: #ffffff;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-top: 5px;
+}
+
+.card-rol button:hover {
+    background-color: #9a6a30;
+}
+
+.mensaje-error {
+    color: rgb(194, 28, 28);
+    font-size: 0.85em;
+    display: none;
+}
+
+.mensaje-exito {
+    color: rgb(27, 131, 27);
+    font-size: 0.85em;
+    display: none;
+}

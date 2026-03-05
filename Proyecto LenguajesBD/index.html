@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Condominio Las Aralias</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <header>
+        <h1>Sistema de Control de Accesos</h1>
+        <h2>Condominio Las Aralias</h2>
+    </header>
+
+    <main>
+        <section class="seccion-login">
+            <h2>Seleccione su perfil</h2>
+            <p>Ingrese con las credenciales correspondientes a su rol</p>
+
+            <div class="contenedor-roles">
+
+                <div class="card-rol">
+                    <h3>🛡️ Guardia</h3>
+                    <p>Control de accesos, visitantes y paquetes</p>
+                    <form id="formGuardia">
+                        <label for="usuarioGuardia">Usuario</label><br>
+                        <input type="text" id="usuarioGuardia" placeholder="Usuario"><br>
+                        <label for="claveGuardia">Contraseña</label><br>
+                        <input type="password" id="claveGuardia" placeholder="Contraseña"><br>
+                        <span id="errorGuardia" class="mensaje-error"></span><br>
+                        <button type="submit">Ingresar como Guardia</button>
+                    </form>
+                </div>
+
+                <div class="card-rol">
+                    <h3>⚙️ Administrador</h3>
+                    <p>Gestión completa del condominio</p>
+                    <form id="formAdmin">
+                        <label for="usuarioAdmin">Usuario</label><br>
+                        <input type="text" id="usuarioAdmin" placeholder="Usuario"><br>
+                        <label for="claveAdmin">Contraseña</label><br>
+                        <input type="password" id="claveAdmin" placeholder="Contraseña"><br>
+                        <span id="errorAdmin" class="mensaje-error"></span><br>
+                        <button type="submit">Ingresar como Administrador</button>
+                    </form>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Proyecto de Lenguajes de Base de Datos</p>
+    </footer>
+
+    <script>
+        let formGuardia = document.getElementById("formGuardia");
+        let formAdmin = document.getElementById("formAdmin");
+
+        formGuardia.addEventListener("submit", function (event) {
+            event.preventDefault();
+            let usuario = document.getElementById("usuarioGuardia").value;
+            let clave = document.getElementById("claveGuardia").value;
+            let error = document.getElementById("errorGuardia");
+            if (usuario == "" || clave == "") {
+                error.innerText = "Por favor complete todos los campos.";
+                error.style.display = "block";
+                return;
+            }
+            window.location.href = "guardia.html";
+        });
+
+        formAdmin.addEventListener("submit", function (event) {
+            event.preventDefault();
+            let usuario = document.getElementById("usuarioAdmin").value;
+            let clave = document.getElementById("claveAdmin").value;
+            let error = document.getElementById("errorAdmin");
+            if (usuario == "" || clave == "") {
+                error.innerText = "Por favor complete todos los campos.";
+                error.style.display = "block";
+                return;
+            }
+            window.location.href = "admin.html";
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

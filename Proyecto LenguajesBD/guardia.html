@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Guardia - Las Aralias</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/guardia.css">
+</head>
+
+<body>
+    <header>
+        <h1>Condominio Las Aralias</h1>
+        <p>Panel del Guardia</p>
+    </header>
+
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid">
+            <span class="navbar-brand">🛡️ Guardia</span>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navGuardia">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navGuardia">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="mostrarSeccion('inicio')">Inicio</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="mostrarSeccion('turnos')">Mis Turnos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="mostrarSeccion('visitantes')">Visitantes</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="mostrarSeccion('paquetes')">Paquetes</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="mostrarSeccion('vehiculos')">Vehículos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="mostrarSeccion('eventos')">Eventos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="mostrarSeccion('residentes')">Residentes</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="mostrarSeccion('residencias')">Residencias</a></li>
+                </ul>
+                <a href="index.html" class="nav-link" style="color:#f0a0a0;">Cerrar sesión</a>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <section id="inicio" class="seccion activa">
+            <h2>Bienvenido, Guardia</h2>
+            <p>Resumen del día de hoy</p>
+            <div class="resumen-inicio">
+                <div class="tarjeta-resumen">
+                    <h3 id="totalVisitantes">0</h3>
+                    <p>Visitantes hoy</p>
+                </div>
+                <div class="tarjeta-resumen">
+                    <h3 id="totalPaquetes">0</h3>
+                    <p>Paquetes pendientes</p>
+                </div>
+                <div class="tarjeta-resumen">
+                    <h3 id="totalEventos">0</h3>
+                    <p>Eventos registrados</p>
+                </div>
+                <div class="tarjeta-resumen">
+                    <h3 id="totalVehiculos">0</h3>
+                    <p>Vehículos registrados</p>
+                </div>
+            </div>
+            <h3>Últimas visitas del día</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Visitante</th>
+                        <th>Residencia</th>
+                        <th>Fecha ingreso</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaUltimasVisitas"></tbody>
+            </table>
+        </section>
+
+        <section id="turnos" class="seccion">
+            <h2>Mis Turnos y Horarios</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Horario</th>
+                        <th>Turno</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaTurnos"></tbody>
+            </table>
+        </section>
+
+        <section id="visitantes" class="seccion">
+            <h2>Visitantes</h2>
+            <div class="contenedor-principal">
+                <div class="bloque-tabla">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Residencia</th>
+                                <th>Fecha Ingreso</th>
+                                <th>Fecha Salida</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaVisitantes"></tbody>
+                    </table>
+                </div>
+                <div class="bloque-formulario">
+                    <h3 id="tituloFormVisitante">Registrar Visitante</h3>
+                    <form id="formVisitante">
+                        <input type="hidden" id="idVisitante" value="-1">
+                        <label for="nombreVisitante">Nombre completo</label>
+                        <input type="text" id="nombreVisitante" placeholder="Nombre del visitante">
+
+                        <label for="residenciaVisitante">Residencia que visita</label>
+                        <select id="residenciaVisitante">
+                            <option value="">-- Seleccione --</option>
+                        </select>
+
+                        <label for="rolVisitante">Rol</label>
+                        <select id="rolVisitante">
+                            <option value="Visitante">Visitante</option>
+                            <option value="Proveedor">Proveedor</option>
+                        </select>
+
+                        <label for="fechaIngresoVisitante">Fecha y hora de ingreso</label>
+                        <input type="text" id="fechaIngresoVisitante" placeholder="Ej: 2026-03-05 08:00">
+
+                        <label for="fechaSalidaVisitante">Fecha y hora de salida</label>
+                        <input type="text" id="fechaSalidaVisitante" placeholder="Ej: 2026-03-05 10:00">
+
+                        <label for="estadoVisitante">Estado</label>
+                        <select id="estadoVisitante">
+                            <option value="Dentro">Dentro</option>
+                            <option value="Salió">Salió</option>
+                        </select>
+
+                        <span id="errorVisitante" class="mensaje-error"></span>
+                        <span id="exitoVisitante" class="mensaje-exito"></span>
+
+                        <button type="submit">Guardar</button>
+                        <button type="button" class="btn-limpiar" onclick="limpiarFormVisitante()">Limpiar</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <section id="paquetes" class="seccion">
+            <h2>Paquetes</h2>
+            <div class="contenedor-principal">
+                <div class="bloque-tabla">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Descripción</th>
+                                <th>Residencia</th>
+                                <th>Fecha Ingreso</th>
+                                <th>Fecha Salida</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaPaquetes"></tbody>
+                    </table>
+                </div>
+                <div class="bloque-formulario">
+                    <h3 id="tituloFormPaquete">Registrar Paquete</h3>
+                    <form id="formPaquete">
+                        <input type="hidden" id="idPaquete" value="-1">
+                        <label for="descPaquete">Descripción</label>
+                        <input type="text" id="descPaquete" placeholder="Ej: Caja Amazon">
+
+                        <label for="residenciaPaquete">Residencia destino</label>
+                        <select id="residenciaPaquete">
+                            <option value="">-- Seleccione --</option>
+                        </select>
+
+                        <label for="fechaIngresoPaquete">Fecha de ingreso</label>
+                        <input type="text" id="fechaIngresoPaquete" placeholder="Ej: 2026-03-05">
+
+                        <label for="fechaSalidaPaquete">Fecha de entrega</label>
+                        <input type="text" id="fechaSalidaPaquete" placeholder="Ej: 2026-03-06">
+
+                        <label for="estadoPaquete">Estado</label>
+                        <select id="estadoPaquete">
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="Entregado">Entregado</option>
+                        </select>
+
+                        <span id="errorPaquete" class="mensaje-error"></span>
+                        <span id="exitoPaquete" class="mensaje-exito"></span>
+
+                        <button type="submit">Guardar</button>
+                        <button type="button" class="btn-limpiar" onclick="limpiarFormPaquete()">Limpiar</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <section id="vehiculos" class="seccion">
+            <h2>Vehículos</h2>
+            <div class="contenedor-principal">
+                <div class="bloque-tabla">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Placa</th>
+                                <th>Descripción</th>
+                                <th>Residente</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaVehiculos"></tbody>
+                    </table>
+                </div>
+                <div class="bloque-formulario">
+                    <h3 id="tituloFormVehiculo">Registrar Vehículo</h3>
+                    <form id="formVehiculo">
+                        <input type="hidden" id="idVehiculo" value="-1">
+                        <label for="placaVehiculo">Placa</label>
+                        <input type="text" id="placaVehiculo" placeholder="Ej: ABC-123">
+
+                        <label for="descVehiculo">Descripción</label>
+                        <input type="text" id="descVehiculo" placeholder="Ej: Toyota Corolla gris">
+
+                        <label for="residenteVehiculo">Residente dueño</label>
+                        <select id="residenteVehiculo">
+                            <option value="">-- Seleccione --</option>
+                        </select>
+
+                        <label for="estadoVehiculo">Estado</label>
+                        <select id="estadoVehiculo">
+                            <option value="Activo">Activo</option>
+                            <option value="Inactivo">Inactivo</option>
+                        </select>
+
+                        <span id="errorVehiculo" class="mensaje-error"></span>
+                        <span id="exitoVehiculo" class="mensaje-exito"></span>
+
+                        <button type="submit">Guardar</button>
+                        <button type="button" class="btn-limpiar" onclick="limpiarFormVehiculo()">Limpiar</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <section id="eventos" class="seccion">
+            <h2>Eventos / Incidentes</h2>
+            <div class="contenedor-principal">
+                <div class="bloque-tabla">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Descripción</th>
+                                <th>Tipo</th>
+                                <th>Fecha</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaEventos"></tbody>
+                    </table>
+                </div>
+                <div class="bloque-formulario">
+                    <h3 id="tituloFormEvento">Registrar Evento</h3>
+                    <form id="formEvento">
+                        <input type="hidden" id="idEvento" value="-1">
+                        <label for="descEvento">Descripción</label>
+                        <textarea id="descEvento" placeholder="Describa el evento o incidente"></textarea>
+
+                        <label for="tipoEvento">Tipo de evento</label>
+                        <select id="tipoEvento">
+                            <option value="Incidente">Incidente</option>
+                            <option value="Visita especial">Visita especial</option>
+                            <option value="Mantenimiento">Mantenimiento</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+
+                        <label for="fechaEvento">Fecha del evento</label>
+                        <input type="text" id="fechaEvento" placeholder="Ej: 2026-03-05">
+
+                        <label for="estadoEvento">Estado</label>
+                        <select id="estadoEvento">
+                            <option value="Activo">Activo</option>
+                            <option value="Resuelto">Resuelto</option>
+                        </select>
+
+                        <span id="errorEvento" class="mensaje-error"></span>
+                        <span id="exitoEvento" class="mensaje-exito"></span>
+
+                        <button type="submit">Guardar</button>
+                        <button type="button" class="btn-limpiar" onclick="limpiarFormEvento()">Limpiar</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <section id="residentes" class="seccion">
+            <h2>Residentes</h2>
+            <p style="color:#666; font-size:0.9em;">Vista de consulta. Para modificar datos contacte al administrador.</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Apellido Paterno</th>
+                        <th>Apellido Materno</th>
+                        <th>Teléfono</th>
+                        <th>Residencia</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaResidentes"></tbody>
+            </table>
+        </section>
+
+        <section id="residencias" class="seccion">
+            <h2>Residencias</h2>
+            <p style="color:#666; font-size:0.9em;">Vista de consulta. Para modificar datos contacte al administrador.</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID Residencia</th>
+                        <th>Monto Alquiler</th>
+                        <th>Monto Mantenimiento</th>
+                        <th>Tipo de Pago</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaResidencias"></tbody>
+            </table>
+        </section>
+
+    </main>
+
+    <footer>
+        <p>Proyecto de Lenguajes de Base de Datos</p>
+    </footer>
+
+    <script src="js/guardia.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
