@@ -15,10 +15,9 @@
         <p>Panel del Administrador</p>
     </header>
 
-    <!-- NAVBAR -->
     <nav class="navbar navbar-expand-lg">
         <div class="container-fluid">
-            <span class="navbar-brand">⚙️ Admin</span>
+            <span class="navbar-brand">Admin</span>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navAdmin">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -35,7 +34,7 @@
                     <li class="nav-item"><a class="nav-link" href="#" onclick="mostrarSeccion('eventos')">Eventos</a></li>
                     <li class="nav-item"><a class="nav-link" href="#" onclick="mostrarSeccion('vehiculos')">Vehículos</a></li>
                 </ul>
-                <a href="index.html" class="nav-link" style="color:#f0c0f0;">Cerrar sesión</a>
+                <a href="index.html" class="nav-link" style="color:#f0a0a0;">Cerrar sesión</a>
             </div>
         </div>
     </nav>
@@ -47,36 +46,41 @@
             <p>Resumen general del sistema</p>
             <div class="resumen-inicio">
                 <div class="tarjeta-resumen">
-                    <h3 id="totalGuardias">0</h3>
+                    <h3>--</h3>
                     <p>Guardias activos</p>
                 </div>
                 <div class="tarjeta-resumen">
-                    <h3 id="totalResidentes">0</h3>
+                    <h3>--</h3>
                     <p>Residentes</p>
                 </div>
                 <div class="tarjeta-resumen">
-                    <h3 id="totalResidencias">0</h3>
+                    <h3>--</h3>
                     <p>Residencias</p>
                 </div>
                 <div class="tarjeta-resumen">
-                    <h3 id="totalPaquetes">0</h3>
+                    <h3>--</h3>
                     <p>Paquetes pendientes</p>
                 </div>
                 <div class="tarjeta-resumen">
-                    <h3 id="totalEventos">0</h3>
+                    <h3>--</h3>
                     <p>Eventos activos</p>
                 </div>
                 <div class="tarjeta-resumen">
-                    <h3 id="totalFacturas">0</h3>
+                    <h3>--</h3>
                     <p>Facturas pendientes</p>
                 </div>
             </div>
             <h3>Últimos eventos registrados</h3>
             <table>
                 <thead>
-                    <tr><th>Descripción</th><th>Tipo</th><th>Fecha</th><th>Estado</th></tr>
+                    <tr>
+                        <th>Descripción</th>
+                        <th>Tipo</th>
+                        <th>Fecha</th>
+                        <th>Estado</th>
+                    </tr>
                 </thead>
-                <tbody id="tablaUltimosEventos"></tbody>
+                <tbody></tbody>
             </table>
         </section>
 
@@ -86,34 +90,38 @@
                 <div class="bloque-tabla">
                     <table>
                         <thead>
-                            <tr><th>Nombre</th><th>Apellidos</th><th>Teléfono</th><th>Correo</th><th>Estado</th><th>Acciones</th></tr>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Apellidos</th>
+                                <th>Teléfono</th>
+                                <th>Correo</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
                         </thead>
-                        <tbody id="tablaGuardias"></tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
                 <div class="bloque-formulario">
-                    <h3 id="tituloFormGuardia">Agregar Guardia</h3>
-                    <form id="formGuardia">
-                        <input type="hidden" id="idGuardia" value="-1">
-                        <label for="nombreGuardia">Nombre</label>
-                        <input type="text" id="nombreGuardia" placeholder="Nombre">
-                        <label for="apPaternoGuardia">Apellido Paterno</label>
-                        <input type="text" id="apPaternoGuardia" placeholder="Apellido Paterno">
-                        <label for="apMaternoGuardia">Apellido Materno</label>
-                        <input type="text" id="apMaternoGuardia" placeholder="Apellido Materno">
-                        <label for="telefonoGuardia">Teléfono</label>
-                        <input type="text" id="telefonoGuardia" placeholder="Ej: 8888-0000">
-                        <label for="correoGuardia">Correo</label>
-                        <input type="text" id="correoGuardia" placeholder="correo@ejemplo.com">
-                        <label for="estadoGuardia">Estado</label>
-                        <select id="estadoGuardia">
-                            <option value="Activo">Activo</option>
-                            <option value="Inactivo">Inactivo</option>
+                    <h3>Agregar Guardia</h3>
+                    <form>
+                        <label>Nombre</label>
+                        <input type="text" placeholder="Nombre">
+                        <label>Apellido Paterno</label>
+                        <input type="text" placeholder="Apellido Paterno">
+                        <label>Apellido Materno</label>
+                        <input type="text" placeholder="Apellido Materno">
+                        <label>Teléfono</label>
+                        <input type="text" placeholder="Ej: 8888-0000">
+                        <label>Correo</label>
+                        <input type="text" placeholder="correo@ejemplo.com">
+                        <label>Estado</label>
+                        <select>
+                            <option>Activo</option>
+                            <option>Inactivo</option>
                         </select>
-                        <span id="errorGuardia" class="mensaje-error"></span>
-                        <span id="exitoGuardia" class="mensaje-exito"></span>
                         <button type="submit">Guardar</button>
-                        <button type="button" class="btn-limpiar" onclick="limpiarFormGuardia()">Limpiar</button>
+                        <button type="button" class="btn-limpiar">Limpiar</button>
                     </form>
                 </div>
             </div>
@@ -125,38 +133,42 @@
                 <div class="bloque-tabla">
                     <table>
                         <thead>
-                            <tr><th>Nombre</th><th>Apellidos</th><th>Teléfono</th><th>Residencia</th><th>Estado</th><th>Acciones</th></tr>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Apellidos</th>
+                                <th>Teléfono</th>
+                                <th>Residencia</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
                         </thead>
-                        <tbody id="tablaResidentes"></tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
                 <div class="bloque-formulario">
-                    <h3 id="tituloFormResidente">Agregar Residente</h3>
-                    <form id="formResidente">
-                        <input type="hidden" id="idResidente" value="-1">
-                        <label for="nombreResidente">Nombre</label>
-                        <input type="text" id="nombreResidente" placeholder="Nombre">
-                        <label for="apPaternoResidente">Apellido Paterno</label>
-                        <input type="text" id="apPaternoResidente" placeholder="Apellido Paterno">
-                        <label for="apMaternoResidente">Apellido Materno</label>
-                        <input type="text" id="apMaternoResidente" placeholder="Apellido Materno">
-                        <label for="telefonoResidente">Teléfono</label>
-                        <input type="text" id="telefonoResidente" placeholder="Ej: 8888-0000">
-                        <label for="correoResidente">Correo</label>
-                        <input type="text" id="correoResidente" placeholder="correo@ejemplo.com">
-                        <label for="residenciaResidente">Residencia</label>
-                        <select id="residenciaResidente">
+                    <h3>Agregar Residente</h3>
+                    <form>
+                        <label>Nombre</label>
+                        <input type="text" placeholder="Nombre">
+                        <label>Apellido Paterno</label>
+                        <input type="text" placeholder="Apellido Paterno">
+                        <label>Apellido Materno</label>
+                        <input type="text" placeholder="Apellido Materno">
+                        <label>Teléfono</label>
+                        <input type="text" placeholder="Ej: 8888-0000">
+                        <label>Correo</label>
+                        <input type="text" placeholder="correo@ejemplo.com">
+                        <label>Residencia</label>
+                        <select>
                             <option value="">-- Seleccione --</option>
                         </select>
-                        <label for="estadoResidente">Estado</label>
-                        <select id="estadoResidente">
-                            <option value="Activo">Activo</option>
-                            <option value="Inactivo">Inactivo</option>
+                        <label>Estado</label>
+                        <select>
+                            <option>Activo</option>
+                            <option>Inactivo</option>
                         </select>
-                        <span id="errorResidente" class="mensaje-error"></span>
-                        <span id="exitoResidente" class="mensaje-exito"></span>
                         <button type="submit">Guardar</button>
-                        <button type="button" class="btn-limpiar" onclick="limpiarFormResidente()">Limpiar</button>
+                        <button type="button" class="btn-limpiar">Limpiar</button>
                     </form>
                 </div>
             </div>
@@ -168,34 +180,38 @@
                 <div class="bloque-tabla">
                     <table>
                         <thead>
-                            <tr><th>ID</th><th>Monto Alquiler</th><th>Monto Mantenimiento</th><th>Tipo Pago</th><th>Estado</th><th>Acciones</th></tr>
+                            <tr>
+                                <th>ID</th>
+                                <th>Monto Alquiler</th>
+                                <th>Monto Mantenimiento</th>
+                                <th>Tipo de Pago</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
                         </thead>
-                        <tbody id="tablaResidencias"></tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
                 <div class="bloque-formulario">
-                    <h3 id="tituloFormResidencia">Agregar Residencia</h3>
-                    <form id="formResidencia">
-                        <input type="hidden" id="idResidencia" value="-1">
-                        <label for="montoAlquiler">Monto Alquiler (₡)</label>
-                        <input type="number" id="montoAlquiler" placeholder="Ej: 350000">
-                        <label for="montoMantenimiento">Monto Mantenimiento (₡)</label>
-                        <input type="number" id="montoMantenimiento" placeholder="Ej: 25000">
-                        <label for="tipoPago">Tipo de Pago</label>
-                        <select id="tipoPago">
-                            <option value="Mensual">Mensual</option>
-                            <option value="Quincenal">Quincenal</option>
-                            <option value="Semanal">Semanal</option>
+                    <h3>Agregar Residencia</h3>
+                    <form>
+                        <label>Monto Alquiler (₡)</label>
+                        <input type="number" placeholder="Ej: 350000">
+                        <label>Monto Mantenimiento (₡)</label>
+                        <input type="number" placeholder="Ej: 25000">
+                        <label>Tipo de Pago</label>
+                        <select>
+                            <option>Mensual</option>
+                            <option>Quincenal</option>
+                            <option>Semanal</option>
                         </select>
-                        <label for="estadoResidencia">Estado</label>
-                        <select id="estadoResidencia">
-                            <option value="Activo">Activo</option>
-                            <option value="Inactivo">Inactivo</option>
+                        <label>Estado</label>
+                        <select>
+                            <option>Activo</option>
+                            <option>Inactivo</option>
                         </select>
-                        <span id="errorResidencia" class="mensaje-error"></span>
-                        <span id="exitoResidencia" class="mensaje-exito"></span>
                         <button type="submit">Guardar</button>
-                        <button type="button" class="btn-limpiar" onclick="limpiarFormResidencia()">Limpiar</button>
+                        <button type="button" class="btn-limpiar">Limpiar</button>
                     </form>
                 </div>
             </div>
@@ -203,23 +219,38 @@
 
         <section id="visitantes" class="seccion">
             <h2>Visitantes</h2>
-            <p style="color:#666; font-size:0.9em;">Historial completo de visitas al condominio.</p>
+            <p style="color:#969191; font-size:0.9em;">Historial completo de visitas al condominio.</p>
             <table>
                 <thead>
-                    <tr><th>Nombre</th><th>Rol</th><th>Residencia</th><th>Fecha Ingreso</th><th>Fecha Salida</th><th>Estado</th><th>Acciones</th></tr>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Rol</th>
+                        <th>Residencia</th>
+                        <th>Fecha Ingreso</th>
+                        <th>Fecha Salida</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
                 </thead>
-                <tbody id="tablaVisitantes"></tbody>
+                <tbody></tbody>
             </table>
         </section>
 
         <section id="paquetes" class="seccion">
             <h2>Paquetes</h2>
-            <p style="color:#666; font-size:0.9em;">Gestión de paquetes recibidos en el condominio.</p>
+            <p style="color:#969191; font-size:0.9em;">Gestión de paquetes recibidos en el condominio.</p>
             <table>
                 <thead>
-                    <tr><th>Descripción</th><th>Residencia</th><th>Fecha Ingreso</th><th>Fecha Entrega</th><th>Estado</th><th>Acciones</th></tr>
+                    <tr>
+                        <th>Descripción</th>
+                        <th>Residencia</th>
+                        <th>Fecha Ingreso</th>
+                        <th>Fecha Entrega</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
                 </thead>
-                <tbody id="tablaPaquetes"></tbody>
+                <tbody></tbody>
             </table>
         </section>
 
@@ -229,45 +260,50 @@
                 <div class="bloque-tabla">
                     <table>
                         <thead>
-                            <tr><th>Fecha</th><th>Descripción</th><th>Residente</th><th>Tipo Pago</th><th>Forma Pago</th><th>Estado</th><th>Acciones</th></tr>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Descripción</th>
+                                <th>Residente</th>
+                                <th>Tipo Pago</th>
+                                <th>Forma Pago</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
                         </thead>
-                        <tbody id="tablaFacturas"></tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
                 <div class="bloque-formulario">
-                    <h3 id="tituloFormFactura">Agregar Factura</h3>
-                    <form id="formFactura">
-                        <input type="hidden" id="idFactura" value="-1">
-                        <label for="fechaFactura">Fecha</label>
-                        <input type="text" id="fechaFactura" placeholder="Ej: 2026-03-05">
-                        <label for="descFactura">Descripción</label>
-                        <input type="text" id="descFactura" placeholder="Ej: Cuota mensual Marzo">
-                        <label for="residenteFactura">Residente</label>
-                        <select id="residenteFactura">
+                    <h3>Agregar Factura</h3>
+                    <form>
+                        <label>Fecha</label>
+                        <input type="text" placeholder="Ej: 2026-03-05">
+                        <label>Descripción</label>
+                        <input type="text" placeholder="Ej: Cuota mensual Marzo">
+                        <label>Residente</label>
+                        <select>
                             <option value="">-- Seleccione --</option>
                         </select>
-                        <label for="tipoPagoFactura">Tipo de Pago</label>
-                        <select id="tipoPagoFactura">
-                            <option value="Alquiler">Alquiler</option>
-                            <option value="Mantenimiento">Mantenimiento</option>
-                            <option value="Servicio">Servicio</option>
+                        <label>Tipo de Pago</label>
+                        <select>
+                            <option>Alquiler</option>
+                            <option>Mantenimiento</option>
+                            <option>Servicio</option>
                         </select>
-                        <label for="formaPagoFactura">Forma de Pago</label>
-                        <select id="formaPagoFactura">
-                            <option value="Efectivo">Efectivo</option>
-                            <option value="Transferencia">Transferencia</option>
-                            <option value="Tarjeta">Tarjeta</option>
+                        <label>Forma de Pago</label>
+                        <select>
+                            <option>Efectivo</option>
+                            <option>Transferencia</option>
+                            <option>Tarjeta</option>
                         </select>
-                        <label for="estadoFactura">Estado</label>
-                        <select id="estadoFactura">
-                            <option value="Pendiente">Pendiente</option>
-                            <option value="Pagado">Pagado</option>
-                            <option value="Vencido">Vencido</option>
+                        <label>Estado</label>
+                        <select>
+                            <option>Pendiente</option>
+                            <option>Pagado</option>
+                            <option>Vencido</option>
                         </select>
-                        <span id="errorFactura" class="mensaje-error"></span>
-                        <span id="exitoFactura" class="mensaje-exito"></span>
                         <button type="submit">Guardar</button>
-                        <button type="button" class="btn-limpiar" onclick="limpiarFormFactura()">Limpiar</button>
+                        <button type="button" class="btn-limpiar">Limpiar</button>
                     </form>
                 </div>
             </div>
@@ -279,38 +315,41 @@
                 <div class="bloque-tabla">
                     <table>
                         <thead>
-                            <tr><th>Descripción</th><th>Tipo</th><th>Fecha Salida</th><th>Estado</th><th>Acciones</th></tr>
+                            <tr>
+                                <th>Descripción</th>
+                                <th>Tipo</th>
+                                <th>Fecha Salida</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
                         </thead>
-                        <tbody id="tablaServicios"></tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
                 <div class="bloque-formulario">
-                    <h3 id="tituloFormServicio">Agregar Servicio</h3>
-                    <form id="formServicio">
-                        <input type="hidden" id="idServicio" value="-1">
-                        <label for="descServicio">Descripción</label>
-                        <input type="text" id="descServicio" placeholder="Ej: Plomería">
-                        <label for="tipoServicio">Tipo de Servicio</label>
-                        <select id="tipoServicio">
-                            <option value="Plomería">Plomería</option>
-                            <option value="Electricidad">Electricidad</option>
-                            <option value="Jardinería">Jardinería</option>
-                            <option value="Seguridad">Seguridad</option>
-                            <option value="Limpieza">Limpieza</option>
-                            <option value="Otro">Otro</option>
+                    <h3>Agregar Servicio</h3>
+                    <form>
+                        <label>Descripción</label>
+                        <input type="text" placeholder="Ej: Plomería zona norte">
+                        <label>Tipo de Servicio</label>
+                        <select>
+                            <option>Plomería</option>
+                            <option>Electricidad</option>
+                            <option>Jardinería</option>
+                            <option>Seguridad</option>
+                            <option>Limpieza</option>
+                            <option>Otro</option>
                         </select>
-                        <label for="fechaSalidaServicio">Fecha de Salida</label>
-                        <input type="text" id="fechaSalidaServicio" placeholder="Ej: 2026-03-10">
-                        <label for="estadoServicio">Estado</label>
-                        <select id="estadoServicio">
-                            <option value="Activo">Activo</option>
-                            <option value="Finalizado">Finalizado</option>
-                            <option value="Cancelado">Cancelado</option>
+                        <label>Fecha de Salida</label>
+                        <input type="text" placeholder="Ej: 2026-03-10">
+                        <label>Estado</label>
+                        <select>
+                            <option>Activo</option>
+                            <option>Finalizado</option>
+                            <option>Cancelado</option>
                         </select>
-                        <span id="errorServicio" class="mensaje-error"></span>
-                        <span id="exitoServicio" class="mensaje-exito"></span>
                         <button type="submit">Guardar</button>
-                        <button type="button" class="btn-limpiar" onclick="limpiarFormServicio()">Limpiar</button>
+                        <button type="button" class="btn-limpiar">Limpiar</button>
                     </form>
                 </div>
             </div>
@@ -322,35 +361,38 @@
                 <div class="bloque-tabla">
                     <table>
                         <thead>
-                            <tr><th>Descripción</th><th>Tipo</th><th>Fecha</th><th>Estado</th><th>Acciones</th></tr>
+                            <tr>
+                                <th>Descripción</th>
+                                <th>Tipo</th>
+                                <th>Fecha</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
                         </thead>
-                        <tbody id="tablaEventos"></tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
                 <div class="bloque-formulario">
-                    <h3 id="tituloFormEvento">Agregar Evento</h3>
-                    <form id="formEvento">
-                        <input type="hidden" id="idEvento" value="-1">
-                        <label for="descEvento">Descripción</label>
-                        <textarea id="descEvento" placeholder="Describa el evento"></textarea>
-                        <label for="tipoEvento">Tipo</label>
-                        <select id="tipoEvento">
-                            <option value="Incidente">Incidente</option>
-                            <option value="Visita especial">Visita especial</option>
-                            <option value="Mantenimiento">Mantenimiento</option>
-                            <option value="Otro">Otro</option>
+                    <h3>Agregar Evento</h3>
+                    <form>
+                        <label>Descripción</label>
+                        <textarea placeholder="Describa el evento o incidente"></textarea>
+                        <label>Tipo</label>
+                        <select>
+                            <option>Incidente</option>
+                            <option>Visita especial</option>
+                            <option>Mantenimiento</option>
+                            <option>Otro</option>
                         </select>
-                        <label for="fechaEvento">Fecha</label>
-                        <input type="text" id="fechaEvento" placeholder="Ej: 2026-03-05">
-                        <label for="estadoEvento">Estado</label>
-                        <select id="estadoEvento">
-                            <option value="Activo">Activo</option>
-                            <option value="Resuelto">Resuelto</option>
+                        <label>Fecha</label>
+                        <input type="text" placeholder="Ej: 2026-03-05">
+                        <label>Estado</label>
+                        <select>
+                            <option>Activo</option>
+                            <option>Resuelto</option>
                         </select>
-                        <span id="errorEvento" class="mensaje-error"></span>
-                        <span id="exitoEvento" class="mensaje-exito"></span>
                         <button type="submit">Guardar</button>
-                        <button type="button" class="btn-limpiar" onclick="limpiarFormEvento()">Limpiar</button>
+                        <button type="button" class="btn-limpiar">Limpiar</button>
                     </form>
                 </div>
             </div>
@@ -358,12 +400,18 @@
 
         <section id="vehiculos" class="seccion">
             <h2>Vehículos</h2>
-            <p style="color:#666; font-size:0.9em;">Gestión de vehículos registrados en el condominio.</p>
+            <p style="color:#969191; font-size:0.9em;">Gestión de vehículos registrados en el condominio.</p>
             <table>
                 <thead>
-                    <tr><th>Placa</th><th>Descripción</th><th>Residente</th><th>Estado</th><th>Acciones</th></tr>
+                    <tr>
+                        <th>Placa</th>
+                        <th>Descripción</th>
+                        <th>Residente</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
                 </thead>
-                <tbody id="tablaVehiculos"></tbody>
+                <tbody></tbody>
             </table>
         </section>
 
