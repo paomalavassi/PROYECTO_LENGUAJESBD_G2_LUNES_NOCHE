@@ -9,7 +9,7 @@ $usuarios = [
 ];
 
 // ─── Cambia aquí qué usuario está activo ──────────────────
-define('USUARIO_ACTIVO', 'usuario1');
+define('USUARIO_ACTIVO', 'admin_aralias');
 // ──────────────────────────────────────────────────────────
 
 define('DB_TNS', 'lenguajesbd_high');
