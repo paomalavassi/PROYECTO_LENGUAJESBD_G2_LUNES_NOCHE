@@ -13,3 +13,5 @@ while ($row = oci_fetch_assoc($stmt)) {
 
 oci_free_statement($stmt);
 oci_close($conn);
+
+//php test_select.php
