@@ -1,4 +1,5 @@
 <?php
+putenv("TNS_ADMIN=D:\\PROYECTO_LENGUAJESBD_G2_LUNES_NOCHE\\Proyecto LenguajesBD\\Wallet_LenguajesBD");
 
 // ─── Define aquí todos tus usuarios ───────────────────────
 $usuarios = [

@@ -1,4 +1,6 @@
 <?php
+putenv("TNS_ADMIN=D:\\PROYECTO_LENGUAJESBD_G2_LUNES_NOCHE\\Proyecto LenguajesBD\\Wallet_LenguajesBD");
+
 require 'config/bd.php';
 
 $conn = getConnection();
@@ -14,4 +16,10 @@ while ($row = oci_fetch_assoc($stmt)) {
 oci_free_statement($stmt);
 oci_close($conn);
 
-//php test_select.php
+/*
+
+PARA EJECUTAR ESTE SCRIPT:
+
+php test_select.php
+
+*/
