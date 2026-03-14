@@ -19,11 +19,15 @@ async function apiGet(accion, extra = {}) {
 }
 
 function estadoBadge(estado) {
-    const e = (estado || '').toLowerCase();
-    if (e.includes('activ') || e.includes('pagad') || e.includes('dentro'))
+    const e = (estado || '').toUpperCase();
+
+    if (['ACTIVO','ADENTRO','ENTREGADO','EN PROCESO','RESUELTO','PAGADO',
+         'OCUPADO','LIBRE','RESERVADO'].includes(e))
         return `<span class="estado-activo">${estado}</span>`;
-    if (e.includes('pend') || e.includes('dentro'))
+
+    if (['PENDIENTE','AFUERA','PROGRAMADO','EN MANTENIMIENTO','EN VACACIONES'].includes(e))
         return `<span class="estado-pendiente">${estado}</span>`;
+
     return `<span class="estado-inactivo">${estado}</span>`;
 }
 
@@ -44,7 +48,7 @@ function mostrarMensaje(contenedor, texto, esError = false) {
     if (!el) return;
     el.textContent = texto;
     el.style.display = 'block';
-    setTimeout(() => { el.style.display = 'none'; }, 4000);
+    setTimeout(() => { el.style.display = 'none'; }, 5000);
 }
 
 async function cargarResumen() {
@@ -56,6 +60,7 @@ async function cargarResumen() {
 
         const eventos = await apiGet('ultimos_eventos');
         const tb = document.querySelector('#inicio table tbody');
+        if (!tb) return;
         tb.innerHTML = eventos.map(ev =>
             `<tr>
                 <td>${ev.DESCR_EVENTO}</td>
@@ -71,6 +76,7 @@ async function cargarGuardias() {
     try {
         const data = await apiGet('listar_guardias');
         const tb   = document.querySelector('#guardias .bloque-tabla table tbody');
+        if (!tb) return;
         tb.innerHTML = data.map(g =>
             `<tr>
                 <td>${g.NOMBRE}</td>
@@ -123,18 +129,20 @@ async function cargarResidentes() {
     try {
         const data = await apiGet('listar_residentes');
         const tb   = document.querySelector('#residentes .bloque-tabla table tbody');
+        if (!tb) return;
         tb.innerHTML = data.map(r =>
             `<tr>
                 <td>${r.NOMBRE}</td>
                 <td>${r.APELLIDO_PATERNO} ${r.APELLIDO_MATERNO}</td>
                 <td>${r.TELEFONO ?? '--'}</td>
+                <td>${r.CORREO ?? '--'}</td>
                 <td>${r.ID_RESIDENCIA ?? '--'}</td>
                 <td>${estadoBadge(r.NOMBRE_ESTADO)}</td>
                 <td>
                     <button class="btn-eliminar" onclick="eliminarPersona(${r.ID_PERSONA},'residentes')">Dar de baja</button>
                 </td>
             </tr>`
-        ).join('') || '<tr><td colspan="6">Sin registros</td></tr>';
+        ).join('') || '<tr><td colspan="7">Sin registros</td></tr>';
     } catch (e) { console.error('Error residentes:', e); }
 }
 
@@ -143,7 +151,10 @@ async function cargarSelectResidencias(selectId) {
     const sel  = document.getElementById(selectId);
     if (!sel) return;
     llenarSelect(sel, data, 'ID_RESIDENCIA', 'ID_RESIDENCIA');
-    data.forEach((r, i) => { sel.options[i + 1].textContent = `Res. ${r.ID_RESIDENCIA} — ₡${r.MONTO_ALQUILER}`; });
+    data.forEach((r, i) => {
+        if (sel.options[i + 1])
+            sel.options[i + 1].textContent = `Res. ${r.ID_RESIDENCIA} — ₡${Number(r.MONTO_ALQUILER).toLocaleString()}`;
+    });
 }
 
 async function guardarResidente(e) {
@@ -176,6 +187,7 @@ async function cargarResidencias() {
     try {
         const data = await apiGet('listar_residencias');
         const tb   = document.querySelector('#residencias .bloque-tabla table tbody');
+        if (!tb) return;
         tb.innerHTML = data.map(r =>
             `<tr>
                 <td>${r.ID_RESIDENCIA}</td>
@@ -224,11 +236,12 @@ async function cargarVisitantes() {
     try {
         const data = await apiGet('listar_visitas');
         const tb   = document.querySelector('#visitantes table tbody');
+        if (!tb) return;
         tb.innerHTML = data.map(v =>
             `<tr>
                 <td>${v.VISITANTE}</td>
                 <td>${v.ROL ?? '--'}</td>
-                <td>${v.ID_RESIDENCIA}</td>
+                <td>${v.ID_RESIDENCIA ?? '--'}</td>
                 <td>${v.FECHA_INGRESO}</td>
                 <td>${v.FECHA_SALIDA ?? '--'}</td>
                 <td>${estadoBadge(v.NOMBRE_ESTADO)}</td>
@@ -251,10 +264,11 @@ async function cargarPaquetes() {
     try {
         const data = await apiGet('listar_paquetes');
         const tb   = document.querySelector('#paquetes table tbody');
+        if (!tb) return;
         tb.innerHTML = data.map(p =>
             `<tr>
                 <td>${p.PERSONA}</td>
-                <td>${p.ID_RESIDENCIA}</td>
+                <td>${p.ID_RESIDENCIA ?? '--'}</td>
                 <td>${p.FECHA_INGRESO}</td>
                 <td>${p.FECHA_SALIDA ?? '--'}</td>
                 <td>${estadoBadge(p.NOMBRE_ESTADO)}</td>
@@ -277,6 +291,7 @@ async function cargarFacturas() {
     try {
         const data = await apiGet('listar_facturas');
         const tb   = document.querySelector('#facturas .bloque-tabla table tbody');
+        if (!tb) return;
         tb.innerHTML = data.map(f =>
             `<tr>
                 <td>${f.FECHA_FACTURA}</td>
@@ -314,6 +329,7 @@ async function guardarFactura(e) {
         id_estado:     inputs[5].value,
     };
     if (!data.descr_factura) { mostrarMensaje(form.closest('.bloque-formulario'), 'La descripción es requerida.', true); return; }
+    if (!data.id_persona)    { mostrarMensaje(form.closest('.bloque-formulario'), 'Debe seleccionar el residente.', true); return; }
     const r = await api(data);
     if (r.error) {
         mostrarMensaje(form.closest('.bloque-formulario'), 'Error: ' + r.mensaje, true);
@@ -328,17 +344,19 @@ async function cargarServicios() {
     try {
         const data = await apiGet('listar_servicios');
         const tb   = document.querySelector('#servicios .bloque-tabla table tbody');
+        if (!tb) return;
         tb.innerHTML = data.map(s =>
             `<tr>
                 <td>${s.DESCR_SERVICIO}</td>
                 <td>${s.TIPO_SERVICIO}</td>
                 <td>${s.FECHA_SALIDA ?? '--'}</td>
+                <td>${s.PERSONAS ?? '--'}</td>
                 <td>${estadoBadge(s.NOMBRE_ESTADO)}</td>
                 <td>
                     <button class="btn-eliminar" onclick="eliminarServicio(${s.ID_SERVICIO})">Dar de baja</button>
                 </td>
             </tr>`
-        ).join('') || '<tr><td colspan="5">Sin registros</td></tr>';
+        ).join('') || '<tr><td colspan="6">Sin registros</td></tr>';
     } catch (e) { console.error('Error servicios:', e); }
 }
 
@@ -354,12 +372,13 @@ async function guardarServicio(e) {
     const form = document.querySelector('#servicios .bloque-formulario form');
     const inputs = form.querySelectorAll('input, select, textarea');
     const data = {
-        accion:           'insertar_servicio',
-        descr_servicio:   inputs[0].value.trim(),
-        id_tipo_servicio: inputs[1].value,
-        fecha_salida:     inputs[2].value,
-        id_estado:        inputs[3].value,
-        id_tipo_evento:   1,
+        accion:              'insertar_servicio',
+        descr_servicio:      inputs[0].value.trim(),
+        id_tipo_servicio:    inputs[1].value,
+        id_persona_servicio: inputs[2].value,
+        fecha_salida:        inputs[3].value,
+        id_estado:           inputs[4].value,
+        id_tipo_evento:      1,
     };
     if (!data.descr_servicio) { mostrarMensaje(form.closest('.bloque-formulario'), 'La descripción es requerida.', true); return; }
     const r = await api(data);
@@ -376,6 +395,7 @@ async function cargarEventos() {
     try {
         const data = await apiGet('listar_eventos');
         const tb   = document.querySelector('#eventos .bloque-tabla table tbody');
+        if (!tb) return;
         tb.innerHTML = data.map(ev =>
             `<tr>
                 <td>${ev.DESCR_EVENTO}</td>
@@ -410,6 +430,7 @@ async function guardarEvento(e) {
         id_tipo_espacio:  1,
     };
     if (!data.descr_evento) { mostrarMensaje(form.closest('.bloque-formulario'), 'La descripción es requerida.', true); return; }
+    if (!data.id_tipo_evento) { mostrarMensaje(form.closest('.bloque-formulario'), 'Debe seleccionar el tipo de evento.', true); return; }
     const r = await api(data);
     if (r.error) {
         mostrarMensaje(form.closest('.bloque-formulario'), 'Error: ' + r.mensaje, true);
@@ -424,6 +445,7 @@ async function cargarVehiculos() {
     try {
         const data = await apiGet('listar_vehiculos');
         const tb   = document.querySelector('#vehiculos table tbody');
+        if (!tb) return;
         tb.innerHTML = data.map(v =>
             `<tr>
                 <td>${v.PLACA}</td>
@@ -447,15 +469,20 @@ async function eliminarVehiculo(placa) {
 
 async function cargarSelectsAdmin() {
     try {
-        const [tiposPago, formasPago, tiposServicio, tiposEvento, estados, residencias, personas] = await Promise.all([
-            apiGet('listar_tipos_pago'),
-            apiGet('listar_formas_pago'),
-            apiGet('listar_tipos_servicio'),
-            apiGet('listar_tipos_evento'),
-            apiGet('listar_estados'),
-            apiGet('listar_residencias'),
-            apiGet('listar_personas'),
-        ]);
+        const [tiposPago, formasPago, tiposServicio, tiposEvento, estados, residencias, personas, trabajadores] =
+            await Promise.all([
+                apiGet('listar_tipos_pago'),
+                apiGet('listar_formas_pago'),
+                apiGet('listar_tipos_servicio'),
+                apiGet('listar_tipos_evento'),
+                apiGet('listar_estados'),
+                apiGet('listar_residencias'),
+                apiGet('listar_personas'),
+                apiGet('listar_trabajadores'),
+            ]);
+
+        const selEstGuardia = document.querySelector('#guardias .bloque-formulario select');
+        if (selEstGuardia) llenarSelect(selEstGuardia, estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
 
         const selResRes = document.querySelector('#residentes .bloque-formulario select:nth-of-type(1)');
         if (selResRes) {
@@ -466,32 +493,28 @@ async function cargarSelectsAdmin() {
                     selResRes.options[i + 1].textContent = `Res. ${r.ID_RESIDENCIA} — ₡${Number(r.MONTO_ALQUILER).toLocaleString()}`;
             });
         }
-
-        const selEstGuardia = document.querySelector('#guardias .bloque-formulario select');
-        if (selEstGuardia) llenarSelect(selEstGuardia, estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
-
         const selEstRes = document.querySelector('#residentes .bloque-formulario select:nth-of-type(2)');
         if (selEstRes) llenarSelect(selEstRes, estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
 
         const selTipoPagoRes = document.querySelector('#residencias .bloque-formulario select:nth-of-type(1)');
         if (selTipoPagoRes) llenarSelect(selTipoPagoRes, tiposPago, 'ID_TIPO_PAGO', 'TIPO');
-
         const selEstResi = document.querySelector('#residencias .bloque-formulario select:nth-of-type(2)');
         if (selEstResi) llenarSelect(selEstResi, estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
 
         const facturaSels = document.querySelectorAll('#facturas .bloque-formulario select');
-        if (facturaSels[0]) llenarSelect(facturaSels[0], personas, 'ID_PERSONA', 'NOMBRE_COMPLETO');
+        if (facturaSels[0]) llenarSelect(facturaSels[0], personas,   'ID_PERSONA',    'NOMBRE_COMPLETO');
         if (facturaSels[1]) llenarSelect(facturaSels[1], tiposPago,  'ID_TIPO_PAGO',  'TIPO');
         if (facturaSels[2]) llenarSelect(facturaSels[2], formasPago, 'ID_FORMA_PAGO', 'FORMA');
-        if (facturaSels[3]) llenarSelect(facturaSels[3], estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
+        if (facturaSels[3]) llenarSelect(facturaSels[3], estados,    'ID_ESTADO',     'NOMBRE_ESTADO');
 
         const servSels = document.querySelectorAll('#servicios .bloque-formulario select');
         if (servSels[0]) llenarSelect(servSels[0], tiposServicio, 'ID_TIPO_SERVICIO', 'TIPO_SERVICIO');
-        if (servSels[1]) llenarSelect(servSels[1], estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
+        if (servSels[1]) llenarSelect(servSels[1], trabajadores,  'ID_PERSONA',       'NOMBRE_COMPLETO');
+        if (servSels[2]) llenarSelect(servSels[2], estados,       'ID_ESTADO',        'NOMBRE_ESTADO');
 
         const evSels = document.querySelectorAll('#eventos .bloque-formulario select');
         if (evSels[0]) llenarSelect(evSels[0], tiposEvento, 'ID_TIPO_EVENTO', 'TIPO_EVENTO');
-        if (evSels[1]) llenarSelect(evSels[1], estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
+        if (evSels[1]) llenarSelect(evSels[1], estados,     'ID_ESTADO',      'NOMBRE_ESTADO');
 
     } catch (e) { console.error('Error cargando selects:', e); }
 }
@@ -519,12 +542,12 @@ function asignarFormularios() {
     const btnServicio  = document.querySelector('#servicios  .bloque-formulario form button[type="submit"]');
     const btnEvento    = document.querySelector('#eventos    .bloque-formulario form button[type="submit"]');
 
-    if (btnGuardia)   btnGuardia.closest('form').addEventListener('submit', guardarGuardia);
-    if (btnResidente) btnResidente.closest('form').addEventListener('submit', guardarResidente);
-    if (btnResidencia)btnResidencia.closest('form').addEventListener('submit', guardarResidencia);
-    if (btnFactura)   btnFactura.closest('form').addEventListener('submit', guardarFactura);
-    if (btnServicio)  btnServicio.closest('form').addEventListener('submit', guardarServicio);
-    if (btnEvento)    btnEvento.closest('form').addEventListener('submit', guardarEvento);
+    if (btnGuardia)    btnGuardia.closest('form').addEventListener('submit',   guardarGuardia);
+    if (btnResidente)  btnResidente.closest('form').addEventListener('submit', guardarResidente);
+    if (btnResidencia) btnResidencia.closest('form').addEventListener('submit',guardarResidencia);
+    if (btnFactura)    btnFactura.closest('form').addEventListener('submit',   guardarFactura);
+    if (btnServicio)   btnServicio.closest('form').addEventListener('submit',  guardarServicio);
+    if (btnEvento)     btnEvento.closest('form').addEventListener('submit',    guardarEvento);
 
     document.querySelectorAll('.btn-limpiar').forEach(btn => {
         btn.addEventListener('click', () => btn.closest('form').reset());

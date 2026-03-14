@@ -79,9 +79,9 @@
             <table>
                 <thead>
                     <tr>
+                        <th>Guardia</th>
                         <th>Fecha</th>
                         <th>Horario</th>
-                        <th>Turno</th>
                         <th>Estado</th>
                     </tr>
                 </thead>
@@ -120,8 +120,7 @@
 
                         <label>Rol</label>
                         <select>
-                            <option>Visitante</option>
-                            <option>Proveedor</option>
+                            <option value="">-- Seleccione --</option>
                         </select>
 
                         <label>Fecha y hora de ingreso</label>
@@ -132,8 +131,7 @@
 
                         <label>Estado</label>
                         <select>
-                            <option>Dentro</option>
-                            <option>Salió</option>
+                            <option value="">-- Seleccione --</option>
                         </select>
 
                         <button type="submit">Guardar</button>
@@ -164,8 +162,10 @@
                 <div class="bloque-formulario">
                     <h3>Registrar Paquete</h3>
                     <form>
-                        <label>Descripción</label>
-                        <input type="text" placeholder="Ej: Caja Amazon">
+                        <label>Persona que recibe</label>
+                        <select>
+                            <option value="">-- Seleccione --</option>
+                        </select>
 
                         <label>Residencia destino</label>
                         <select>
@@ -180,8 +180,7 @@
 
                         <label>Estado</label>
                         <select>
-                            <option>Pendiente</option>
-                            <option>Entregado</option>
+                            <option value="">-- Seleccione --</option>
                         </select>
 
                         <button type="submit">Guardar</button>
@@ -224,8 +223,7 @@
 
                         <label>Estado</label>
                         <select>
-                            <option>Activo</option>
-                            <option>Inactivo</option>
+                            <option value="">-- Seleccione --</option>
                         </select>
 
                         <button type="submit">Guardar</button>
@@ -260,10 +258,7 @@
 
                         <label>Tipo de evento</label>
                         <select>
-                            <option>Incidente</option>
-                            <option>Visita especial</option>
-                            <option>Mantenimiento</option>
-                            <option>Otro</option>
+                            <option value="">-- Seleccione --</option>
                         </select>
 
                         <label>Fecha del evento</label>
@@ -271,8 +266,7 @@
 
                         <label>Estado</label>
                         <select>
-                            <option>Activo</option>
-                            <option>Resuelto</option>
+                            <option value="">-- Seleccione --</option>
                         </select>
 
                         <button type="submit">Guardar</button>

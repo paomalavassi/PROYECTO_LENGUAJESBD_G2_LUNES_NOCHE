@@ -137,6 +137,7 @@
                                 <th>Nombre</th>
                                 <th>Apellidos</th>
                                 <th>Teléfono</th>
+                                <th>Correo</th>
                                 <th>Residencia</th>
                                 <th>Estado</th>
                                 <th>Acciones</th>
@@ -286,21 +287,15 @@
                         </select>
                         <label>Tipo de Pago</label>
                         <select>
-                            <option>Alquiler</option>
-                            <option>Mantenimiento</option>
-                            <option>Servicio</option>
+                            <option value="">-- Seleccione --</option>
                         </select>
                         <label>Forma de Pago</label>
                         <select>
-                            <option>Efectivo</option>
-                            <option>Transferencia</option>
-                            <option>Tarjeta</option>
+                            <option value="">-- Seleccione --</option>
                         </select>
                         <label>Estado</label>
                         <select>
-                            <option>Pendiente</option>
-                            <option>Pagado</option>
-                            <option>Vencido</option>
+                            <option value="">-- Seleccione --</option>
                         </select>
                         <button type="submit">Guardar</button>
                         <button type="button" class="btn-limpiar">Limpiar</button>
@@ -319,6 +314,7 @@
                                 <th>Descripción</th>
                                 <th>Tipo</th>
                                 <th>Fecha Salida</th>
+                                <th>Persona(s)</th>
                                 <th>Estado</th>
                                 <th>Acciones</th>
                             </tr>
@@ -330,23 +326,20 @@
                     <h3>Agregar Servicio</h3>
                     <form>
                         <label>Descripción</label>
-                        <input type="text" placeholder="Ej: Plomería zona norte">
+                        <textarea placeholder="Ej: Plomería zona norte"></textarea>
                         <label>Tipo de Servicio</label>
                         <select>
-                            <option>Plomería</option>
-                            <option>Electricidad</option>
-                            <option>Jardinería</option>
-                            <option>Seguridad</option>
-                            <option>Limpieza</option>
-                            <option>Otro</option>
+                            <option value="">-- Seleccione --</option>
+                        </select>
+                        <label>Persona que realiza el servicio</label>
+                        <select>
+                            <option value="">-- Seleccione (opcional) --</option>
                         </select>
                         <label>Fecha de Salida</label>
                         <input type="text" placeholder="Ej: 2026-03-10">
                         <label>Estado</label>
                         <select>
-                            <option>Activo</option>
-                            <option>Finalizado</option>
-                            <option>Cancelado</option>
+                            <option value="">-- Seleccione --</option>
                         </select>
                         <button type="submit">Guardar</button>
                         <button type="button" class="btn-limpiar">Limpiar</button>
@@ -379,17 +372,13 @@
                         <textarea placeholder="Describa el evento o incidente"></textarea>
                         <label>Tipo</label>
                         <select>
-                            <option>Incidente</option>
-                            <option>Visita especial</option>
-                            <option>Mantenimiento</option>
-                            <option>Otro</option>
+                            <option value="">-- Seleccione --</option>
                         </select>
                         <label>Fecha</label>
                         <input type="text" placeholder="Ej: 2026-03-05">
                         <label>Estado</label>
                         <select>
-                            <option>Activo</option>
-                            <option>Resuelto</option>
+                            <option value="">-- Seleccione --</option>
                         </select>
                         <button type="submit">Guardar</button>
                         <button type="button" class="btn-limpiar">Limpiar</button>

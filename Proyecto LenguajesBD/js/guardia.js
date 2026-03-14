@@ -19,11 +19,15 @@ async function apiGet(accion, extra = {}) {
 }
 
 function estadoBadge(estado) {
-    const e = (estado || '').toLowerCase();
-    if (e.includes('activ') || e.includes('dentro') || e.includes('entregad'))
+    const e = (estado || '').toUpperCase();
+
+    if (['ACTIVO','ADENTRO','ENTREGADO','EN PROCESO','RESUELTO','PAGADO',
+         'OCUPADO','LIBRE','RESERVADO'].includes(e))
         return `<span class="estado-activo">${estado}</span>`;
-    if (e.includes('pend'))
+
+    if (['PENDIENTE','AFUERA','PROGRAMADO','EN MANTENIMIENTO','EN VACACIONES'].includes(e))
         return `<span class="estado-pendiente">${estado}</span>`;
+
     return `<span class="estado-inactivo">${estado}</span>`;
 }
 
@@ -44,7 +48,7 @@ function mostrarMensaje(contenedor, texto, esError = false) {
     if (!el) return;
     el.textContent = texto;
     el.style.display = 'block';
-    setTimeout(() => { el.style.display = 'none'; }, 4000);
+    setTimeout(() => { el.style.display = 'none'; }, 5000);
 }
 
 async function cargarResumenGuardia() {
@@ -68,18 +72,30 @@ async function cargarResumenGuardia() {
 }
 
 async function cargarTurnos() {
-    const tb = document.querySelector('#turnos table tbody');
-    if (tb) tb.innerHTML = '<tr><td colspan="4">Sin turnos asignados</td></tr>';
+    try {
+        const data = await apiGet('listar_turnos');
+        const tb   = document.querySelector('#turnos table tbody');
+        if (!tb) return;
+        tb.innerHTML = data.map(t =>
+            `<tr>
+                <td>${t.GUARDIA}</td>
+                <td>${t.FECHA}</td>
+                <td>${t.HORARIO_TURNO}</td>
+                <td>${estadoBadge(t.NOMBRE_ESTADO)}</td>
+            </tr>`
+        ).join('') || '<tr><td colspan="4">Sin turnos registrados</td></tr>';
+    } catch (e) { console.error('Error turnos:', e); }
 }
 
 async function cargarVisitantes() {
     try {
         const data = await apiGet('listar_visitas');
         const tb   = document.querySelector('#visitantes .bloque-tabla table tbody');
+        if (!tb) return;
         tb.innerHTML = data.map(v =>
             `<tr>
                 <td>${v.VISITANTE}</td>
-                <td>${v.ID_RESIDENCIA}</td>
+                <td>${v.ID_RESIDENCIA ?? '--'}</td>
                 <td>${v.FECHA_INGRESO}</td>
                 <td>${v.FECHA_SALIDA ?? '--'}</td>
                 <td>${estadoBadge(v.NOMBRE_ESTADO)}</td>
@@ -116,6 +132,10 @@ async function guardarVisita(e) {
         mostrarMensaje(form.closest('.bloque-formulario'), 'El nombre del visitante es requerido.', true);
         return;
     }
+    if (!data.id_residencia) {
+        mostrarMensaje(form.closest('.bloque-formulario'), 'Debe seleccionar una residencia.', true);
+        return;
+    }
     const r = await api(data);
     if (r.error) {
         mostrarMensaje(form.closest('.bloque-formulario'), 'Error: ' + r.mensaje, true);
@@ -130,6 +150,7 @@ async function cargarPaquetes() {
     try {
         const data = await apiGet('listar_paquetes');
         const tb   = document.querySelector('#paquetes .bloque-tabla table tbody');
+        if (!tb) return;
         tb.innerHTML = data.map(p =>
             `<tr>
                 <td>${p.PERSONA}</td>
@@ -158,12 +179,20 @@ async function guardarPaquete(e) {
     const inputs = form.querySelectorAll('input, select, textarea');
     const data = {
         accion:        'insertar_paquete',
-        id_persona:    0,
+        id_persona:    inputs[0].value,
         id_residencia: inputs[1].value,
         fecha_ingreso: inputs[2].value,
         fecha_salida:  inputs[3].value,
         id_estado:     inputs[4].value,
     };
+    if (!data.id_persona) {
+        mostrarMensaje(form.closest('.bloque-formulario'), 'Debe seleccionar la persona.', true);
+        return;
+    }
+    if (!data.id_residencia) {
+        mostrarMensaje(form.closest('.bloque-formulario'), 'Debe seleccionar la residencia.', true);
+        return;
+    }
     const r = await api(data);
     if (r.error) {
         mostrarMensaje(form.closest('.bloque-formulario'), 'Error: ' + r.mensaje, true);
@@ -178,6 +207,7 @@ async function cargarVehiculos() {
     try {
         const data = await apiGet('listar_vehiculos');
         const tb   = document.querySelector('#vehiculos .bloque-tabla table tbody');
+        if (!tb) return;
         tb.innerHTML = data.map(v =>
             `<tr>
                 <td>${v.PLACA}</td>
@@ -229,6 +259,7 @@ async function cargarEventos() {
     try {
         const data = await apiGet('listar_eventos');
         const tb   = document.querySelector('#eventos .bloque-tabla table tbody');
+        if (!tb) return;
         tb.innerHTML = data.map(ev =>
             `<tr>
                 <td>${ev.DESCR_EVENTO}</td>
@@ -264,6 +295,10 @@ async function guardarEvento(e) {
     };
     if (!data.descr_evento) {
         mostrarMensaje(form.closest('.bloque-formulario'), 'La descripción es requerida.', true);
+        return;
+    }
+    if (!data.id_tipo_evento) {
+        mostrarMensaje(form.closest('.bloque-formulario'), 'Debe seleccionar el tipo de evento.', true);
         return;
     }
     const r = await api(data);
@@ -329,14 +364,15 @@ async function cargarSelectsGuardia() {
                     visSelRes.options[i + 1].textContent = `Res. ${r.ID_RESIDENCIA} — ₡${Number(r.MONTO_ALQUILER).toLocaleString()}`;
             });
         }
-
         const visSelRol = document.querySelector('#visitantes .bloque-formulario select:nth-of-type(2)');
         if (visSelRol) llenarSelect(visSelRol, roles, 'ID_ROL', 'ROL');
-
         const visSelEst = document.querySelector('#visitantes .bloque-formulario select:nth-of-type(3)');
         if (visSelEst) llenarSelect(visSelEst, estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
 
-        const paqSelRes = document.querySelector('#paquetes .bloque-formulario select:nth-of-type(1)');
+        const paqSelPer = document.querySelector('#paquetes .bloque-formulario select:nth-of-type(1)');
+        if (paqSelPer) llenarSelect(paqSelPer, personas, 'ID_PERSONA', 'NOMBRE_COMPLETO');
+
+        const paqSelRes = document.querySelector('#paquetes .bloque-formulario select:nth-of-type(2)');
         if (paqSelRes) {
             llenarSelect(paqSelRes, residencias, 'ID_RESIDENCIA', 'ID_RESIDENCIA');
             residencias.forEach((r, i) => {
@@ -344,18 +380,16 @@ async function cargarSelectsGuardia() {
                     paqSelRes.options[i + 1].textContent = `Res. ${r.ID_RESIDENCIA}`;
             });
         }
-        const paqSelEst = document.querySelector('#paquetes .bloque-formulario select:nth-of-type(2)');
+        const paqSelEst = document.querySelector('#paquetes .bloque-formulario select:nth-of-type(3)');
         if (paqSelEst) llenarSelect(paqSelEst, estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
 
         const vehSelPer = document.querySelector('#vehiculos .bloque-formulario select:nth-of-type(1)');
         if (vehSelPer) llenarSelect(vehSelPer, personas, 'ID_PERSONA', 'NOMBRE_COMPLETO');
-
         const vehSelEst = document.querySelector('#vehiculos .bloque-formulario select:nth-of-type(2)');
         if (vehSelEst) llenarSelect(vehSelEst, estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
 
         const evSelTipo = document.querySelector('#eventos .bloque-formulario select:nth-of-type(1)');
         if (evSelTipo) llenarSelect(evSelTipo, tiposEvento, 'ID_TIPO_EVENTO', 'TIPO_EVENTO');
-
         const evSelEst = document.querySelector('#eventos .bloque-formulario select:nth-of-type(2)');
         if (evSelEst) llenarSelect(evSelEst, estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
 
