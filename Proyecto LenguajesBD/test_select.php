@@ -1,11 +1,11 @@
 <?php
-putenv("TNS_ADMIN=D:\\PROYECTO_LENGUAJESBD_G2_LUNES_NOCHE\\Proyecto LenguajesBD\\Wallet_LenguajesBD");
+putenv("TNS_ADMIN=D:\\Proyectos y trabajos de la U\\Lenguajes de BD\\PROYECTO_LENGUAJESBD_G2_LUNES_NOCHE\\Proyecto LenguajesBD\\Wallet_LenguajesBD");
 
 require 'config/bd.php';
 
 $conn = getConnection();
 
-$sql = "SELECT * FROM FIDE_ESTADOS_TB";
+$sql  = "SELECT * FROM FIDE_ESTADOS_TB";
 $stmt = oci_parse($conn, $sql);
 oci_execute($stmt);
 
