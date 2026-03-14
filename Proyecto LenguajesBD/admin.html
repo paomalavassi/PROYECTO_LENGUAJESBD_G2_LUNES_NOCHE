@@ -45,41 +45,16 @@
             <h2>Bienvenido, Administrador</h2>
             <p>Resumen general del sistema</p>
             <div class="resumen-inicio">
-                <div class="tarjeta-resumen">
-                    <h3>--</h3>
-                    <p>Guardias activos</p>
-                </div>
-                <div class="tarjeta-resumen">
-                    <h3>--</h3>
-                    <p>Residentes</p>
-                </div>
-                <div class="tarjeta-resumen">
-                    <h3>--</h3>
-                    <p>Residencias</p>
-                </div>
-                <div class="tarjeta-resumen">
-                    <h3>--</h3>
-                    <p>Paquetes pendientes</p>
-                </div>
-                <div class="tarjeta-resumen">
-                    <h3>--</h3>
-                    <p>Eventos activos</p>
-                </div>
-                <div class="tarjeta-resumen">
-                    <h3>--</h3>
-                    <p>Facturas pendientes</p>
-                </div>
+                <div class="tarjeta-resumen"><h3>--</h3><p>Guardias activos</p></div>
+                <div class="tarjeta-resumen"><h3>--</h3><p>Residentes</p></div>
+                <div class="tarjeta-resumen"><h3>--</h3><p>Residencias</p></div>
+                <div class="tarjeta-resumen"><h3>--</h3><p>Paquetes pendientes</p></div>
+                <div class="tarjeta-resumen"><h3>--</h3><p>Eventos activos</p></div>
+                <div class="tarjeta-resumen"><h3>--</h3><p>Facturas pendientes</p></div>
             </div>
             <h3>Últimos eventos registrados</h3>
             <table>
-                <thead>
-                    <tr>
-                        <th>Descripción</th>
-                        <th>Tipo</th>
-                        <th>Fecha</th>
-                        <th>Estado</th>
-                    </tr>
-                </thead>
+                <thead><tr><th>Descripción</th><th>Tipo</th><th>Fecha</th><th>Estado</th></tr></thead>
                 <tbody></tbody>
             </table>
         </section>
@@ -91,12 +66,8 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Nombre</th>
-                                <th>Apellidos</th>
-                                <th>Teléfono</th>
-                                <th>Correo</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
+                                <th>Nombre</th><th>Apellidos</th><th>Teléfono</th>
+                                <th>Correo</th><th>Estado</th><th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -116,10 +87,7 @@
                         <label>Correo</label>
                         <input type="text" placeholder="correo@ejemplo.com">
                         <label>Estado</label>
-                        <select>
-                            <option>Activo</option>
-                            <option>Inactivo</option>
-                        </select>
+                        <select><option value="">-- Seleccione --</option></select>
                         <button type="submit">Guardar</button>
                         <button type="button" class="btn-limpiar">Limpiar</button>
                     </form>
@@ -134,13 +102,8 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Nombre</th>
-                                <th>Apellidos</th>
-                                <th>Teléfono</th>
-                                <th>Correo</th>
-                                <th>Residencia</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
+                                <th>Nombre</th><th>Apellidos</th><th>Teléfono</th>
+                                <th>Correo</th><th>Residencia</th><th>Estado</th><th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -160,14 +123,11 @@
                         <label>Correo</label>
                         <input type="text" placeholder="correo@ejemplo.com">
                         <label>Residencia</label>
-                        <select>
+                        <select id="sel-residencia-residente">
                             <option value="">-- Seleccione --</option>
                         </select>
                         <label>Estado</label>
-                        <select>
-                            <option>Activo</option>
-                            <option>Inactivo</option>
-                        </select>
+                        <select><option value="">-- Seleccione --</option></select>
                         <button type="submit">Guardar</button>
                         <button type="button" class="btn-limpiar">Limpiar</button>
                     </form>
@@ -182,12 +142,8 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>Monto Alquiler</th>
-                                <th>Monto Mantenimiento</th>
-                                <th>Tipo de Pago</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
+                                <th>ID</th><th>Monto Alquiler</th><th>Monto Mantenimiento</th>
+                                <th>Tipo de Pago</th><th>Estado</th><th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -201,16 +157,9 @@
                         <label>Monto Mantenimiento (₡)</label>
                         <input type="number" placeholder="Ej: 25000">
                         <label>Tipo de Pago</label>
-                        <select>
-                            <option>Mensual</option>
-                            <option>Quincenal</option>
-                            <option>Semanal</option>
-                        </select>
+                        <select><option value="">-- Seleccione --</option></select>
                         <label>Estado</label>
-                        <select>
-                            <option>Activo</option>
-                            <option>Inactivo</option>
-                        </select>
+                        <select><option value="">-- Seleccione --</option></select>
                         <button type="submit">Guardar</button>
                         <button type="button" class="btn-limpiar">Limpiar</button>
                     </form>
@@ -220,17 +169,12 @@
 
         <section id="visitantes" class="seccion">
             <h2>Visitantes</h2>
-            <p style="color:#969191; font-size:0.9em;">Historial completo de visitas al condominio.</p>
+            <p class="nota-seccion">Historial completo de visitas al condominio.</p>
             <table>
                 <thead>
                     <tr>
-                        <th>Nombre</th>
-                        <th>Rol</th>
-                        <th>Residencia</th>
-                        <th>Fecha Ingreso</th>
-                        <th>Fecha Salida</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
+                        <th>Nombre</th><th>Rol</th><th>Residencia</th>
+                        <th>Fecha Ingreso</th><th>Fecha Salida</th><th>Estado</th><th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -239,16 +183,12 @@
 
         <section id="paquetes" class="seccion">
             <h2>Paquetes</h2>
-            <p style="color:#969191; font-size:0.9em;">Gestión de paquetes recibidos en el condominio.</p>
+            <p class="nota-seccion">Gestión de paquetes recibidos en el condominio.</p>
             <table>
                 <thead>
                     <tr>
-                        <th>Descripción</th>
-                        <th>Residencia</th>
-                        <th>Fecha Ingreso</th>
-                        <th>Fecha Entrega</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
+                        <th>Persona</th><th>Residencia</th><th>Fecha Ingreso</th>
+                        <th>Fecha Entrega</th><th>Estado</th><th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -262,13 +202,8 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Fecha</th>
-                                <th>Descripción</th>
-                                <th>Residente</th>
-                                <th>Tipo Pago</th>
-                                <th>Forma Pago</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
+                                <th>Fecha</th><th>Descripción</th><th>Persona</th>
+                                <th>Tipo Pago</th><th>Forma Pago</th><th>Estado</th><th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -281,22 +216,14 @@
                         <input type="text" placeholder="Ej: 2026-03-05">
                         <label>Descripción</label>
                         <input type="text" placeholder="Ej: Cuota mensual Marzo">
-                        <label>Residente</label>
-                        <select>
-                            <option value="">-- Seleccione --</option>
-                        </select>
+                        <label>Persona</label>
+                        <select><option value="">-- Seleccione --</option></select>
                         <label>Tipo de Pago</label>
-                        <select>
-                            <option value="">-- Seleccione --</option>
-                        </select>
+                        <select><option value="">-- Seleccione --</option></select>
                         <label>Forma de Pago</label>
-                        <select>
-                            <option value="">-- Seleccione --</option>
-                        </select>
+                        <select><option value="">-- Seleccione --</option></select>
                         <label>Estado</label>
-                        <select>
-                            <option value="">-- Seleccione --</option>
-                        </select>
+                        <select><option value="">-- Seleccione --</option></select>
                         <button type="submit">Guardar</button>
                         <button type="button" class="btn-limpiar">Limpiar</button>
                     </form>
@@ -311,12 +238,8 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Descripción</th>
-                                <th>Tipo</th>
-                                <th>Fecha Salida</th>
-                                <th>Persona(s)</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
+                                <th>Descripción</th><th>Tipo</th><th>Fecha Salida</th>
+                                <th>Persona(s)</th><th>Estado</th><th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -328,19 +251,13 @@
                         <label>Descripción</label>
                         <textarea placeholder="Ej: Plomería zona norte"></textarea>
                         <label>Tipo de Servicio</label>
-                        <select>
-                            <option value="">-- Seleccione --</option>
-                        </select>
+                        <select><option value="">-- Seleccione --</option></select>
                         <label>Persona que realiza el servicio</label>
-                        <select>
-                            <option value="">-- Seleccione (opcional) --</option>
-                        </select>
+                        <select><option value="">-- Seleccione (opcional) --</option></select>
                         <label>Fecha de Salida</label>
                         <input type="text" placeholder="Ej: 2026-03-10">
                         <label>Estado</label>
-                        <select>
-                            <option value="">-- Seleccione --</option>
-                        </select>
+                        <select><option value="">-- Seleccione --</option></select>
                         <button type="submit">Guardar</button>
                         <button type="button" class="btn-limpiar">Limpiar</button>
                     </form>
@@ -355,11 +272,8 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Descripción</th>
-                                <th>Tipo</th>
-                                <th>Fecha</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
+                                <th>Descripción</th><th>Tipo</th><th>Fecha</th>
+                                <th>Estado</th><th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -371,15 +285,11 @@
                         <label>Descripción</label>
                         <textarea placeholder="Describa el evento o incidente"></textarea>
                         <label>Tipo</label>
-                        <select>
-                            <option value="">-- Seleccione --</option>
-                        </select>
+                        <select><option value="">-- Seleccione --</option></select>
                         <label>Fecha</label>
                         <input type="text" placeholder="Ej: 2026-03-05">
                         <label>Estado</label>
-                        <select>
-                            <option value="">-- Seleccione --</option>
-                        </select>
+                        <select><option value="">-- Seleccione --</option></select>
                         <button type="submit">Guardar</button>
                         <button type="button" class="btn-limpiar">Limpiar</button>
                     </form>
@@ -389,15 +299,12 @@
 
         <section id="vehiculos" class="seccion">
             <h2>Vehículos</h2>
-            <p style="color:#969191; font-size:0.9em;">Gestión de vehículos registrados en el condominio.</p>
+            <p class="nota-seccion">Gestión de vehículos registrados en el condominio.</p>
             <table>
                 <thead>
                     <tr>
-                        <th>Placa</th>
-                        <th>Descripción</th>
-                        <th>Residente</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
+                        <th>Placa</th><th>Descripción</th><th>Residente</th>
+                        <th>Estado</th><th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody></tbody>

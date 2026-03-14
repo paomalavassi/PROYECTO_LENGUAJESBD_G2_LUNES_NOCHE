@@ -29,6 +29,7 @@
                     <li class="nav-item"><a class="nav-link" href="#" onclick="mostrarSeccion('paquetes')">Paquetes</a></li>
                     <li class="nav-item"><a class="nav-link" href="#" onclick="mostrarSeccion('vehiculos')">Vehículos</a></li>
                     <li class="nav-item"><a class="nav-link" href="#" onclick="mostrarSeccion('eventos')">Eventos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="mostrarSeccion('espacios')">Espacios</a></li>
                     <li class="nav-item"><a class="nav-link" href="#" onclick="mostrarSeccion('residentes')">Residentes</a></li>
                     <li class="nav-item"><a class="nav-link" href="#" onclick="mostrarSeccion('residencias')">Residencias</a></li>
                 </ul>
@@ -43,33 +44,14 @@
             <h2>Bienvenido, Guardia</h2>
             <p>Resumen del día de hoy</p>
             <div class="resumen-inicio">
-                <div class="tarjeta-resumen">
-                    <h3>--</h3>
-                    <p>Visitantes hoy</p>
-                </div>
-                <div class="tarjeta-resumen">
-                    <h3>--</h3>
-                    <p>Paquetes pendientes</p>
-                </div>
-                <div class="tarjeta-resumen">
-                    <h3>--</h3>
-                    <p>Eventos registrados</p>
-                </div>
-                <div class="tarjeta-resumen">
-                    <h3>--</h3>
-                    <p>Vehículos registrados</p>
-                </div>
+                <div class="tarjeta-resumen"><h3>--</h3><p>Visitantes hoy</p></div>
+                <div class="tarjeta-resumen"><h3>--</h3><p>Paquetes pendientes</p></div>
+                <div class="tarjeta-resumen"><h3>--</h3><p>Eventos registrados</p></div>
+                <div class="tarjeta-resumen"><h3>--</h3><p>Vehículos registrados</p></div>
             </div>
             <h3>Últimas visitas del día</h3>
             <table>
-                <thead>
-                    <tr>
-                        <th>Visitante</th>
-                        <th>Residencia</th>
-                        <th>Fecha ingreso</th>
-                        <th>Estado</th>
-                    </tr>
-                </thead>
+                <thead><tr><th>Visitante</th><th>Residencia</th><th>Fecha ingreso</th><th>Estado</th></tr></thead>
                 <tbody></tbody>
             </table>
         </section>
@@ -77,31 +59,21 @@
         <section id="turnos" class="seccion">
             <h2>Mis Turnos y Horarios</h2>
             <table>
-                <thead>
-                    <tr>
-                        <th>Guardia</th>
-                        <th>Fecha</th>
-                        <th>Horario</th>
-                        <th>Estado</th>
-                    </tr>
-                </thead>
+                <thead><tr><th>Guardia</th><th>Fecha</th><th>Horario</th><th>Estado</th></tr></thead>
                 <tbody></tbody>
             </table>
         </section>
 
         <section id="visitantes" class="seccion">
             <h2>Visitantes</h2>
+            <p class="nota-seccion">Usa los botones de acción para registrar ingreso, salida o vetar. Haz clic en "✎ Editar" para modificar un registro existente sin re-ingresarlo.</p>
             <div class="contenedor-principal">
                 <div class="bloque-tabla">
                     <table>
                         <thead>
                             <tr>
-                                <th>Nombre</th>
-                                <th>Residencia</th>
-                                <th>Fecha Ingreso</th>
-                                <th>Fecha Salida</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
+                                <th>Nombre</th><th>Residencia</th><th>Fecha Ingreso</th>
+                                <th>Fecha Salida</th><th>Estado</th><th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -114,25 +86,19 @@
                         <input type="text" placeholder="Nombre del visitante">
 
                         <label>Residencia que visita</label>
-                        <select>
-                            <option value="">-- Seleccione --</option>
-                        </select>
+                        <select><option value="">-- Seleccione --</option></select>
 
                         <label>Rol</label>
-                        <select>
-                            <option value="">-- Seleccione --</option>
-                        </select>
+                        <select><option value="">-- Seleccione --</option></select>
 
                         <label>Fecha y hora de ingreso</label>
                         <input type="text" placeholder="Ej: 2026-03-05 08:00">
 
                         <label>Fecha y hora de salida</label>
-                        <input type="text" placeholder="Ej: 2026-03-05 10:00">
+                        <input type="text" placeholder="Ej: 2026-03-05 10:00 (opcional)">
 
                         <label>Estado</label>
-                        <select>
-                            <option value="">-- Seleccione --</option>
-                        </select>
+                        <select><option value="">-- Seleccione --</option></select>
 
                         <button type="submit">Guardar</button>
                         <button type="button" class="btn-limpiar">Limpiar</button>
@@ -143,17 +109,14 @@
 
         <section id="paquetes" class="seccion">
             <h2>Paquetes</h2>
+            <p class="nota-seccion">Usa "✔ Entregado" para registrar la entrega con la hora exacta automáticamente.</p>
             <div class="contenedor-principal">
                 <div class="bloque-tabla">
                     <table>
                         <thead>
                             <tr>
-                                <th>Descripción</th>
-                                <th>Residencia</th>
-                                <th>Fecha Ingreso</th>
-                                <th>Fecha Entrega</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
+                                <th>Persona</th><th>Residencia</th><th>Fecha Ingreso</th>
+                                <th>Fecha Entrega</th><th>Estado</th><th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -163,26 +126,15 @@
                     <h3>Registrar Paquete</h3>
                     <form>
                         <label>Persona que recibe</label>
-                        <select>
-                            <option value="">-- Seleccione --</option>
-                        </select>
-
+                        <select><option value="">-- Seleccione --</option></select>
                         <label>Residencia destino</label>
-                        <select>
-                            <option value="">-- Seleccione --</option>
-                        </select>
-
+                        <select><option value="">-- Seleccione --</option></select>
                         <label>Fecha de ingreso</label>
                         <input type="text" placeholder="Ej: 2026-03-05">
-
-                        <label>Fecha de entrega</label>
+                        <label>Fecha de entrega (opcional)</label>
                         <input type="text" placeholder="Ej: 2026-03-06">
-
                         <label>Estado</label>
-                        <select>
-                            <option value="">-- Seleccione --</option>
-                        </select>
-
+                        <select><option value="">-- Seleccione --</option></select>
                         <button type="submit">Guardar</button>
                         <button type="button" class="btn-limpiar">Limpiar</button>
                     </form>
@@ -192,16 +144,14 @@
 
         <section id="vehiculos" class="seccion">
             <h2>Vehículos</h2>
+            <p class="nota-seccion">Registra entradas y salidas con los botones de acción. Usa "✎ Editar" para modificar sin re-registrar.</p>
             <div class="contenedor-principal">
                 <div class="bloque-tabla">
                     <table>
                         <thead>
                             <tr>
-                                <th>Placa</th>
-                                <th>Descripción</th>
-                                <th>Residente</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
+                                <th>Placa</th><th>Descripción</th><th>Residente</th>
+                                <th>Estado</th><th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -217,15 +167,9 @@
                         <input type="text" placeholder="Ej: Toyota Corolla gris">
 
                         <label>Residente dueño</label>
-                        <select>
-                            <option value="">-- Seleccione --</option>
-                        </select>
-
+                        <select><option value="">-- Seleccione --</option></select>
                         <label>Estado</label>
-                        <select>
-                            <option value="">-- Seleccione --</option>
-                        </select>
-
+                        <select><option value="">-- Seleccione --</option></select>
                         <button type="submit">Guardar</button>
                         <button type="button" class="btn-limpiar">Limpiar</button>
                     </form>
@@ -235,16 +179,14 @@
 
         <section id="eventos" class="seccion">
             <h2>Eventos / Incidentes</h2>
+            <p class="nota-seccion">Cambia el estado directamente con los botones de acción. Haz clic en "✎ Editar" para modificar sin re-registrar. <strong>Solo admins pueden marcar como Inactivo.</strong></p>
             <div class="contenedor-principal">
                 <div class="bloque-tabla">
                     <table>
                         <thead>
                             <tr>
-                                <th>Descripción</th>
-                                <th>Tipo</th>
-                                <th>Fecha</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
+                                <th>Descripción</th><th>Tipo</th><th>Fecha</th>
+                                <th>Estado</th><th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -257,18 +199,42 @@
                         <textarea placeholder="Describa el evento o incidente"></textarea>
 
                         <label>Tipo de evento</label>
-                        <select>
-                            <option value="">-- Seleccione --</option>
-                        </select>
-
+                        <select><option value="">-- Seleccione --</option></select>
                         <label>Fecha del evento</label>
                         <input type="text" placeholder="Ej: 2026-03-05">
 
                         <label>Estado</label>
-                        <select>
-                            <option value="">-- Seleccione --</option>
-                        </select>
-
+                        <select><option value="">-- Seleccione --</option></select>
+                        <button type="submit">Guardar</button>
+                        <button type="button" class="btn-limpiar">Limpiar</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+        <section id="espacios" class="seccion">
+            <h2>Espacios del Condominio</h2>
+            <p class="nota-seccion">Gestión de los tipos de espacios: parqueos, salones, áreas comunes, etc.</p>
+            <div class="contenedor-principal">
+                <div class="bloque-tabla">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th><th>Nombre</th><th>Descripción</th>
+                                <th>Estado</th><th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div class="bloque-formulario">
+                    <h3>Registrar Espacio</h3>
+                    <form>
+                        <label>Nombre del espacio</label>
+                        <input type="text" placeholder="Ej: Parqueo Residencial">
+                        <label>Descripción</label>
+                        <textarea placeholder="Ej: Espacio asignado a residencias"></textarea>
+                        <label>Estado</label>
+                        <select><option value="">-- Seleccione --</option></select>
                         <button type="submit">Guardar</button>
                         <button type="button" class="btn-limpiar">Limpiar</button>
                     </form>
@@ -278,16 +244,12 @@
 
         <section id="residentes" class="seccion">
             <h2>Residentes</h2>
-            <p style="color:#969191; font-size:0.9em;">Vista de consulta. Para modificar datos contacte al administrador.</p>
+            <p class="nota-seccion">Vista de consulta. Para modificar datos contacte al administrador.</p>
             <table>
                 <thead>
                     <tr>
-                        <th>Nombre</th>
-                        <th>Apellido Paterno</th>
-                        <th>Apellido Materno</th>
-                        <th>Teléfono</th>
-                        <th>Residencia</th>
-                        <th>Estado</th>
+                        <th>Nombre</th><th>Apellido Paterno</th><th>Apellido Materno</th>
+                        <th>Teléfono</th><th>Residencia</th><th>Estado</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -296,15 +258,12 @@
 
         <section id="residencias" class="seccion">
             <h2>Residencias</h2>
-            <p style="color:#969191; font-size:0.9em;">Vista de consulta. Para modificar datos contacte al administrador.</p>
+            <p class="nota-seccion">Vista de consulta. Para modificar datos contacte al administrador.</p>
             <table>
                 <thead>
                     <tr>
-                        <th>ID Residencia</th>
-                        <th>Monto Alquiler</th>
-                        <th>Monto Mantenimiento</th>
-                        <th>Tipo de Pago</th>
-                        <th>Estado</th>
+                        <th>ID</th><th>Monto Alquiler</th><th>Monto Mantenimiento</th>
+                        <th>Tipo de Pago</th><th>Estado</th>
                     </tr>
                 </thead>
                 <tbody></tbody>

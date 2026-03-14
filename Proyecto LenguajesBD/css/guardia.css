@@ -241,3 +241,44 @@ tbody tr:hover {
     color: rgb(194, 28, 28);
     font-weight: bold;
 }
+
+.estado-libre {
+    color: #b8860b;
+    font-weight: bold;
+}
+
+.estado-reservado {
+    color: #1565c0;
+    font-weight: bold;
+}
+
+.acciones-celda {
+    white-space: nowrap;
+    min-width: 180px;
+}
+
+.btn-acc {
+    padding: 3px 7px;
+    font-size: 0.75em;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    margin: 1px 1px;
+    color: #ffffff;
+    font-weight: bold;
+}
+
+.btn-adentro  { background-color: #2e7e3d; }
+.btn-adentro:hover { background-color: #1b5125; }
+
+.btn-salida   { background-color: #e07e06; }
+.btn-salida:hover  { background-color: #a85c05; }
+
+.btn-vetar    { background-color: #d24232; }
+.btn-vetar:hover   { background-color: #89251c; }
+
+.btn-editar   { background-color: #1768c5; }
+.btn-editar:hover  { background-color: #0d3e88; }
+
+.btn-prog     { background-color: #9271c3; }
+.btn-prog:hover    { background-color: #523974; }
