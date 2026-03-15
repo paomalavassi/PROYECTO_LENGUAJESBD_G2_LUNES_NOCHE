@@ -1,5 +1,20 @@
 <?php
-putenv("TNS_ADMIN=D:\\Proyectos y trabajos de la U\\Lenguajes de BD\\PROYECTO_LENGUAJESBD_G2_LUNES_NOCHE\\Proyecto LenguajesBD\\Wallet_LenguajesBD");
+
+//DANIEL Laptop
+putenv("TNS_ADMIN=D:\\PROYECTO_LENGUAJESBD_G2_LUNES_NOCHE\\Proyecto LenguajesBD\\Wallet_LenguajesBD");
+
+//DANIEL PC
+//putenv("TNS_ADMIN=D:\\Proyectos y trabajos de la U\\Lenguajes de BD\\PROYECTO_LENGUAJESBD_G2_LUNES_NOCHE\\Proyecto LenguajesBD\\Wallet_LenguajesBD");
+
+//PAOLA
+//putenv("TNS_ADMIN=C:\\Users\\paopo\\OneDrive\\Escritorio\\LENGUAJES BASES DE DATOS\\PROYECTO_LENGUAJESBD_G2_LUNES_NOCHE\\Proyecto LenguajesBD\\Wallet_LenguajesBD");
+
+//FABRICIO
+//putenv("TNS_ADMIN=C:\\---\\---\\PROYECTO_LENGUAJESBD_G2_LUNES_NOCHE\\Proyecto LenguajesBD\\Wallet_LenguajesBD");
+
+//FABIAN
+//putenv("TNS_ADMIN=C:\\---\\---\\PROYECTO_LENGUAJESBD_G2_LUNES_NOCHE\\Proyecto LenguajesBD\\Wallet_LenguajesBD");
+
 
 $usuarios = [
     'admin_aralias' => ['user' => 'admin_aralias', 'pass' => 'Lenguajes_12345678'],

@@ -1,6 +1,4 @@
 <?php
-putenv("TNS_ADMIN=D:\\Proyectos y trabajos de la U\\Lenguajes de BD\\PROYECTO_LENGUAJESBD_G2_LUNES_NOCHE\\Proyecto LenguajesBD\\Wallet_LenguajesBD");
-
 require 'config/bd.php';
 
 $conn = getConnection();
