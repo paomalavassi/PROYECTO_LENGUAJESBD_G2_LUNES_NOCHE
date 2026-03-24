@@ -80,12 +80,10 @@ switch ($accion) {
         }
 
         $rows = fetchAll($conn,
-            "SELECT p.ID_PERSONA, p.NOMBRE, p.APELLIDO_PATERNO, r.ROL
-             FROM   FIDE_PERSONAS_TB p
-             JOIN   FIDE_ROLES_TB    r ON r.ID_ROL = p.ID_ROL
-             WHERE  p.USUARIO    = :usr
-               AND  p.CONTRASENA = :pwd
-               AND  p.ID_ESTADO  = 1",
+            "SELECT ID_PERSONA, NOMBRE, APELLIDO_PATERNO, ROL
+             FROM   FIDE_CREDENCIALES_LOGIN_V
+             WHERE  USUARIO    = :usr
+               AND  CONTRASENA = :pwd",
             [':usr' => $usuario, ':pwd' => $clave]
         );
 
@@ -116,15 +114,9 @@ switch ($accion) {
 
     case 'listar_guardias':
         $rows = fetchAll($conn,
-            "SELECT p.ID_PERSONA, p.NOMBRE, p.APELLIDO_PATERNO, p.APELLIDO_MATERNO,
-                    p.USUARIO,
-                    (SELECT TELEFONO FROM FIDE_TELEFONOS_TB WHERE ID_PERSONA = p.ID_PERSONA AND ROWNUM=1) AS TELEFONO,
-                    (SELECT CORREO   FROM FIDE_CORREOS_TB   WHERE ID_PERSONA = p.ID_PERSONA AND ROWNUM=1) AS CORREO,
-                    e.ID_ESTADO, e.NOMBRE_ESTADO
-             FROM   FIDE_PERSONAS_TB p
-             LEFT JOIN FIDE_ESTADOS_TB e ON e.ID_ESTADO = p.ID_ESTADO
-             WHERE  p.ID_ROL = (SELECT ID_ROL FROM FIDE_ROLES_TB WHERE UPPER(ROL) LIKE '%GUARD%' AND ROWNUM=1)
-             ORDER  BY p.ID_PERSONA"
+            "SELECT ID_PERSONA, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO,
+                    USUARIO, TELEFONO, CORREO, ID_ESTADO, NOMBRE_ESTADO
+             FROM   FIDE_GUARDIAS_DETALLE_V"
         );
         echo json_encode($rows);
         break;
@@ -481,8 +473,7 @@ switch ($accion) {
             break;
         }
 
-        // Verificar que el usuario no exista ya
-        $existe = fetchAll($conn, "SELECT 1 FROM FIDE_PERSONAS_TB WHERE USUARIO = :u", [':u'=>$usuario]);
+        $existe = fetchAll($conn, "SELECT 1 FROM FIDE_USUARIOS_PERSONAS_V WHERE USUARIO = :u", [':u'=>$usuario]);
         if (!empty($existe)) {
             echo json_encode(['error'=>true,'mensaje'=>"El usuario '$usuario' ya está en uso."]);
             break;
@@ -502,7 +493,6 @@ switch ($accion) {
         );
         if ($r1['error'] ?? false) { echo json_encode($r1); break; }
 
-        // Guardar credenciales de acceso
         execUpdate($conn,
             "UPDATE FIDE_PERSONAS_TB SET USUARIO = :u, CONTRASENA = :c WHERE ID_PERSONA = :id",
             [':u'=>$usuario, ':c'=>$contrasena, ':id'=>$idPersona]
@@ -689,9 +679,8 @@ switch ($accion) {
             break;
         }
 
-        // Verificar que el usuario no esté en uso por OTRA persona
         $existe = fetchAll($conn,
-            "SELECT 1 FROM FIDE_PERSONAS_TB WHERE USUARIO = :u AND ID_PERSONA != :id",
+            "SELECT 1 FROM FIDE_USUARIOS_PERSONAS_V WHERE USUARIO = :u AND ID_PERSONA != :id",
             [':u'=>$usuario, ':id'=>$id]
         );
         if (!empty($existe)) {
@@ -711,7 +700,6 @@ switch ($accion) {
         );
         if ($r['error'] ?? false) { echo json_encode($r); break; }
 
-        // Actualizar usuario (siempre) y contraseña (solo si se proporcionó)
         if ($contrasena) {
             execUpdate($conn,
                 "UPDATE FIDE_PERSONAS_TB SET USUARIO = :u, CONTRASENA = :c WHERE ID_PERSONA = :id",
