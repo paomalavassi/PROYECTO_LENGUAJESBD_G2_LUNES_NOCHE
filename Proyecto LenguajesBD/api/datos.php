@@ -69,9 +69,55 @@ $pkg = PKG;
 
 switch ($accion) {
 
+    case 'login':
+        $usuario = trim($_POST['usuario'] ?? '');
+        $clave   = trim($_POST['clave']   ?? '');
+        $rol     = trim($_POST['rol']     ?? '');
+
+        if (!$usuario || !$clave) {
+            echo json_encode(['error' => true, 'mensaje' => 'Ingrese usuario y contraseña.']);
+            break;
+        }
+
+        $rows = fetchAll($conn,
+            "SELECT p.ID_PERSONA, p.NOMBRE, p.APELLIDO_PATERNO, r.ROL
+             FROM   FIDE_PERSONAS_TB p
+             JOIN   FIDE_ROLES_TB    r ON r.ID_ROL = p.ID_ROL
+             WHERE  p.USUARIO    = :usr
+               AND  p.CONTRASENA = :pwd
+               AND  p.ID_ESTADO  = 1",
+            [':usr' => $usuario, ':pwd' => $clave]
+        );
+
+        if (empty($rows)) {
+            echo json_encode(['error' => true, 'mensaje' => 'Usuario o contraseña incorrectos.']);
+            break;
+        }
+
+        $persona   = $rows[0];
+        $rolNombre = strtoupper($persona['ROL']);
+
+        if ($rol === 'guardia' && strpos($rolNombre, 'GUARD') === false) {
+            echo json_encode(['error' => true, 'mensaje' => 'Este usuario no tiene acceso como Guardia.']);
+            break;
+        }
+        if ($rol === 'admin' && strpos($rolNombre, 'ADMIN') === false) {
+            echo json_encode(['error' => true, 'mensaje' => 'Este usuario no tiene acceso como Administrador.']);
+            break;
+        }
+
+        echo json_encode([
+            'ok'         => true,
+            'id_persona' => $persona['ID_PERSONA'],
+            'nombre'     => $persona['NOMBRE'] . ' ' . $persona['APELLIDO_PATERNO'],
+            'rol'        => $persona['ROL'],
+        ]);
+        break;
+
     case 'listar_guardias':
         $rows = fetchAll($conn,
             "SELECT p.ID_PERSONA, p.NOMBRE, p.APELLIDO_PATERNO, p.APELLIDO_MATERNO,
+                    p.USUARIO,
                     (SELECT TELEFONO FROM FIDE_TELEFONOS_TB WHERE ID_PERSONA = p.ID_PERSONA AND ROWNUM=1) AS TELEFONO,
                     (SELECT CORREO   FROM FIDE_CORREOS_TB   WHERE ID_PERSONA = p.ID_PERSONA AND ROWNUM=1) AS CORREO,
                     e.ID_ESTADO, e.NOMBRE_ESTADO
@@ -421,12 +467,26 @@ switch ($accion) {
         break;
 
     case 'insertar_guardia':
-        $nombre   = $_POST['nombre']           ?? '';
-        $pat      = $_POST['apellido_paterno'] ?? '';
-        $mat      = $_POST['apellido_materno'] ?? '';
-        $tel      = $_POST['telefono']         ?? '';
-        $correo   = $_POST['correo']           ?? '';
-        $idEstado = (int)($_POST['id_estado']  ?? 1);
+        $nombre    = $_POST['nombre']           ?? '';
+        $pat       = $_POST['apellido_paterno'] ?? '';
+        $mat       = $_POST['apellido_materno'] ?? '';
+        $tel       = $_POST['telefono']         ?? '';
+        $correo    = $_POST['correo']           ?? '';
+        $usuario   = trim($_POST['usuario']     ?? '');
+        $contrasena= trim($_POST['contrasena']  ?? '');
+        $idEstado  = (int)($_POST['id_estado']  ?? 1);
+
+        if (!$usuario || !$contrasena) {
+            echo json_encode(['error'=>true,'mensaje'=>'El usuario y la contraseña son requeridos.']);
+            break;
+        }
+
+        // Verificar que el usuario no exista ya
+        $existe = fetchAll($conn, "SELECT 1 FROM FIDE_PERSONAS_TB WHERE USUARIO = :u", [':u'=>$usuario]);
+        if (!empty($existe)) {
+            echo json_encode(['error'=>true,'mensaje'=>"El usuario '$usuario' ya está en uso."]);
+            break;
+        }
 
         $rolRow = fetchAll($conn, "SELECT ID_ROL FROM FIDE_ROLES_TB WHERE UPPER(ROL) LIKE '%GUARD%' AND ROWNUM=1");
         if (empty($rolRow)) { echo json_encode(['error'=>true,'mensaje'=>'No existe rol guardia.']); break; }
@@ -441,6 +501,12 @@ switch ($accion) {
             [':p1'=>$idPersona,':p2'=>$nombre,':p3'=>$pat,':p4'=>$mat,':p5'=>$hoy,':p6'=>$idRol,':p7'=>$idEstado]
         );
         if ($r1['error'] ?? false) { echo json_encode($r1); break; }
+
+        // Guardar credenciales de acceso
+        execUpdate($conn,
+            "UPDATE FIDE_PERSONAS_TB SET USUARIO = :u, CONTRASENA = :c WHERE ID_PERSONA = :id",
+            [':u'=>$usuario, ':c'=>$contrasena, ':id'=>$idPersona]
+        );
 
         if ($tel)    execProc($conn, "BEGIN $pkg.FIDE_TELEFONOS_INSERTAR_SP(:p1,:p2,:p3,:p4); END;", [':p1'=>$idTelefono,':p2'=>$idPersona,':p3'=>$tel,':p4'=>1]);
         if ($correo) execProc($conn, "BEGIN $pkg.FIDE_CORREOS_INSERTAR_SP(:p1,:p2,:p3,:p4); END;",   [':p1'=>$idCorreo,':p2'=>$idPersona,':p3'=>$correo,':p4'=>1]);
@@ -608,13 +674,30 @@ switch ($accion) {
         break;
 
     case 'actualizar_guardia':
-        $id       = (int)($_POST['id']              ?? 0);
-        $nombre   = $_POST['nombre']                ?? '';
-        $pat      = $_POST['apellido_paterno']      ?? '';
-        $mat      = $_POST['apellido_materno']      ?? '';
-        $tel      = $_POST['telefono']              ?? '';
-        $correo   = $_POST['correo']                ?? '';
-        $idEstado = (int)($_POST['id_estado']       ?? 1);
+        $id         = (int)($_POST['id']              ?? 0);
+        $nombre     = $_POST['nombre']                ?? '';
+        $pat        = $_POST['apellido_paterno']      ?? '';
+        $mat        = $_POST['apellido_materno']      ?? '';
+        $tel        = $_POST['telefono']              ?? '';
+        $correo     = $_POST['correo']                ?? '';
+        $usuario    = trim($_POST['usuario']          ?? '');
+        $contrasena = trim($_POST['contrasena']       ?? '');
+        $idEstado   = (int)($_POST['id_estado']       ?? 1);
+
+        if (!$usuario) {
+            echo json_encode(['error'=>true,'mensaje'=>'El usuario no puede estar vacío.']);
+            break;
+        }
+
+        // Verificar que el usuario no esté en uso por OTRA persona
+        $existe = fetchAll($conn,
+            "SELECT 1 FROM FIDE_PERSONAS_TB WHERE USUARIO = :u AND ID_PERSONA != :id",
+            [':u'=>$usuario, ':id'=>$id]
+        );
+        if (!empty($existe)) {
+            echo json_encode(['error'=>true,'mensaje'=>"El usuario '$usuario' ya está en uso por otra persona."]);
+            break;
+        }
 
         $cur = fetchAll($conn,
             "SELECT ID_ROL, TO_CHAR(FECHA_REGISTRO,'YYYY-MM-DD') AS FR FROM FIDE_PERSONAS_TB WHERE ID_PERSONA=:pid",
@@ -627,6 +710,19 @@ switch ($accion) {
              ':p5'=>$cur[0]['FR'],':p6'=>$cur[0]['ID_ROL'],':p7'=>$idEstado]
         );
         if ($r['error'] ?? false) { echo json_encode($r); break; }
+
+        // Actualizar usuario (siempre) y contraseña (solo si se proporcionó)
+        if ($contrasena) {
+            execUpdate($conn,
+                "UPDATE FIDE_PERSONAS_TB SET USUARIO = :u, CONTRASENA = :c WHERE ID_PERSONA = :id",
+                [':u'=>$usuario, ':c'=>$contrasena, ':id'=>$id]
+            );
+        } else {
+            execUpdate($conn,
+                "UPDATE FIDE_PERSONAS_TB SET USUARIO = :u WHERE ID_PERSONA = :id",
+                [':u'=>$usuario, ':id'=>$id]
+            );
+        }
 
         if ($tel) {
             $tRow = fetchAll($conn,"SELECT ID_TELEFONO FROM FIDE_TELEFONOS_TB WHERE ID_PERSONA=:pid AND ROWNUM=1",[':pid'=>$id]);

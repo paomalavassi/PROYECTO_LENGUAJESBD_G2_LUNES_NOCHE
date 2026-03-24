@@ -1,2 +1,2 @@
-WALLET_LOCATION = (SOURCE = (METHOD = file) (METHOD_DATA = (DIRECTORY="D:\Proyectos y trabajos de la U\Lenguajes de BD\PROYECTO_LENGUAJESBD_G2_LUNES_NOCHE\Proyecto LenguajesBD\Wallet_LenguajesBD")))
+WALLET_LOCATION = (SOURCE = (METHOD = file) (METHOD_DATA = (DIRECTORY="D:\PROYECTO_LENGUAJESBD_G2_LUNES_NOCHE\Proyecto LenguajesBD\Wallet_LenguajesBD")))
 SSL_SERVER_DN_MATCH=yes

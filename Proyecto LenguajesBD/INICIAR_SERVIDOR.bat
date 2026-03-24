@@ -14,7 +14,7 @@ for /f "tokens=5" %%a in ('netstat -aon ^| findstr :8080 2^>nul') do (
 )
 
 REM Abrir navegador con un pequeño delay para que el servidor arranque primero
-start "" cmd /c "timeout /t 2 >nul && start http://localhost:8080/admin.html && start http://localhost:8080/guardia.html"
+start "" cmd /c "timeout /t 2 >nul && start http://localhost:8080/admin.html && start http://localhost:8080/guardia.html && start http://localhost:8080/index.html"
 
 REM Iniciar el servidor PHP (esto mantiene la ventana abierta)
 echo  Servidor corriendo en http://localhost:8080

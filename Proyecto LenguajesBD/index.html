@@ -60,30 +60,56 @@
         let formGuardia = document.getElementById("formGuardia");
         let formAdmin = document.getElementById("formAdmin");
 
+        async function login(usuario, clave, rol, errorEl) {
+            errorEl.style.display = 'none';
+            errorEl.innerText = '';
+            try {
+                const res = await fetch('api/datos.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ accion: 'login', usuario, clave, rol })
+                });
+                const data = await res.json();
+                if (data.error) {
+                    errorEl.innerText = data.mensaje;
+                    errorEl.style.display = 'block';
+                } else {
+                    // Guardar datos básicos de sesión en sessionStorage
+                    sessionStorage.setItem('id_persona', data.id_persona);
+                    sessionStorage.setItem('nombre',     data.nombre);
+                    sessionStorage.setItem('rol',        data.rol);
+                    window.location.href = (rol === 'guardia') ? 'guardia.html' : 'admin.html';
+                }
+            } catch (err) {
+                errorEl.innerText = 'Error de conexión con el servidor.';
+                errorEl.style.display = 'block';
+            }
+        }
+
         formGuardia.addEventListener("submit", function (event) {
             event.preventDefault();
-            let usuario = document.getElementById("usuarioGuardia").value;
-            let clave = document.getElementById("claveGuardia").value;
-            let error = document.getElementById("errorGuardia");
-            if (usuario == "" || clave == "") {
+            const usuario = document.getElementById("usuarioGuardia").value.trim();
+            const clave   = document.getElementById("claveGuardia").value.trim();
+            const error   = document.getElementById("errorGuardia");
+            if (!usuario || !clave) {
                 error.innerText = "Por favor complete todos los campos.";
                 error.style.display = "block";
                 return;
             }
-            window.location.href = "guardia.html";
+            login(usuario, clave, 'guardia', error);
         });
 
         formAdmin.addEventListener("submit", function (event) {
             event.preventDefault();
-            let usuario = document.getElementById("usuarioAdmin").value;
-            let clave = document.getElementById("claveAdmin").value;
-            let error = document.getElementById("errorAdmin");
-            if (usuario == "" || clave == "") {
+            const usuario = document.getElementById("usuarioAdmin").value.trim();
+            const clave   = document.getElementById("claveAdmin").value.trim();
+            const error   = document.getElementById("errorAdmin");
+            if (!usuario || !clave) {
                 error.innerText = "Por favor complete todos los campos.";
                 error.style.display = "block";
                 return;
             }
-            window.location.href = "admin.html";
+            login(usuario, clave, 'admin', error);
         });
     </script>
 

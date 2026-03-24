@@ -103,22 +103,29 @@ async function cargarGuardias() {
                 <td>${g.APELLIDO_PATERNO} ${g.APELLIDO_MATERNO}</td>
                 <td>${g.TELEFONO ?? '--'}</td>
                 <td>${g.CORREO ?? '--'}</td>
+                <td>${g.USUARIO ?? '<em style="color:#aaa">sin usuario</em>'}</td>
                 <td>${estadoBadge(g.NOMBRE_ESTADO)}</td>
                 <td class="acciones-celda">
-                    <button class="btn-acc btn-editar" onclick="editarGuardia(${g.ID_PERSONA},'${(g.NOMBRE||'').replace(/'/g,"\\'")}','${(g.APELLIDO_PATERNO||'').replace(/'/g,"\\'")}','${(g.APELLIDO_MATERNO||'').replace(/'/g,"\\'")}','${g.TELEFONO??''}','${g.CORREO??''}',${g.ID_ESTADO??1})">✎ Editar</button>
+                    <button class="btn-acc btn-editar" onclick="editarGuardia(${g.ID_PERSONA},'${(g.NOMBRE||'').replace(/'/g,"\\'")}','${(g.APELLIDO_PATERNO||'').replace(/'/g,"\\'")}','${(g.APELLIDO_MATERNO||'').replace(/'/g,"\\'")}','${g.TELEFONO??''}','${g.CORREO??''}','${g.USUARIO??''}',${g.ID_ESTADO??1})">✎ Editar</button>
                     <button class="btn-acc btn-vetar" onclick="eliminarPersona(${g.ID_PERSONA},'guardias')">✕ Baja</button>
                 </td>
             </tr>`
-        ).join('') || '<tr><td colspan="6">Sin registros</td></tr>';
+        ).join('') || '<tr><td colspan="7">Sin registros</td></tr>';
     } catch (e) { console.error('guardias:', e); }
 }
 
-function editarGuardia(id, nombre, pat, mat, tel, correo, idEstado) {
+// inputs: [0]nombre [1]pat [2]mat [3]tel [4]correo [5]usuario [6]contrasena [7]estado
+function editarGuardia(id, nombre, pat, mat, tel, correo, usuario, idEstado) {
     const form   = document.querySelector('#guardias .bloque-formulario form');
     const inputs = form.querySelectorAll('input, select');
-    inputs[0].value = nombre; inputs[1].value = pat; inputs[2].value = mat;
-    inputs[3].value = tel;   inputs[4].value = correo;
-    if (inputs[5]) inputs[5].value = idEstado;
+    inputs[0].value = nombre;
+    inputs[1].value = pat;
+    inputs[2].value = mat;
+    inputs[3].value = tel;
+    inputs[4].value = correo;
+    inputs[5].value = usuario;
+    inputs[6].value = '';          // Contraseña vacía al editar (no cambiar si no se rellena)
+    if (inputs[7]) inputs[7].value = idEstado;
     form.dataset.editId = id;
     activarModoEdicion(form, '✎ Editar Guardia');
 }
@@ -128,7 +135,9 @@ async function guardarGuardia(e) {
     const form   = document.querySelector('#guardias .bloque-formulario form');
     const inputs = form.querySelectorAll('input, select');
     const editId = form.dataset.editId;
-    const data   = {
+
+    // inputs: [0]nombre [1]pat [2]mat [3]tel [4]correo [5]usuario [6]contrasena [7]estado
+    const data = {
         accion:           editId ? 'actualizar_guardia' : 'insertar_guardia',
         id:               editId ?? '',
         nombre:           inputs[0].value.trim(),
@@ -136,9 +145,18 @@ async function guardarGuardia(e) {
         apellido_materno: inputs[2].value.trim(),
         telefono:         inputs[3].value.trim(),
         correo:           inputs[4].value.trim(),
-        id_estado:        inputs[5].value,
+        usuario:          inputs[5].value.trim(),
+        contrasena:       inputs[6].value.trim(),
+        id_estado:        inputs[7].value,
     };
-    if (!data.nombre) { mostrarMensaje(form.closest('.bloque-formulario'), 'El nombre es requerido.', true); return; }
+
+    if (!data.nombre)  { mostrarMensaje(form.closest('.bloque-formulario'), 'El nombre es requerido.', true);   return; }
+    if (!data.usuario) { mostrarMensaje(form.closest('.bloque-formulario'), 'El usuario es requerido.', true);  return; }
+    if (!editId && !data.contrasena) {
+        mostrarMensaje(form.closest('.bloque-formulario'), 'La contraseña es requerida al crear un guardia.', true);
+        return;
+    }
+
     const r = await api(data);
     if (r.error) {
         mostrarMensaje(form.closest('.bloque-formulario'), 'Error: ' + r.mensaje, true);
