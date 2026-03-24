@@ -114,9 +114,13 @@ switch ($accion) {
 
     case 'listar_guardias':
         $rows = fetchAll($conn,
-            "SELECT ID_PERSONA, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO,
-                    USUARIO, TELEFONO, CORREO, ID_ESTADO, NOMBRE_ESTADO
-             FROM   FIDE_GUARDIAS_DETALLE_V"
+            "SELECT p.ID_PERSONA, p.NOMBRE, p.APELLIDO_PATERNO, p.APELLIDO_MATERNO,
+                    p.USUARIO,
+                    (SELECT TELEFONO FROM FIDE_TELEFONOS_TB WHERE ID_PERSONA = p.ID_PERSONA AND ROWNUM=1) AS TELEFONO,
+                    (SELECT CORREO   FROM FIDE_CORREOS_TB   WHERE ID_PERSONA = p.ID_PERSONA AND ROWNUM=1) AS CORREO,
+                    e.ID_ESTADO, e.NOMBRE_ESTADO
+             FROM   FIDE_LISTAR_GUARDIAS_V p
+             LEFT JOIN FIDE_ESTADOS_TB e ON e.ID_ESTADO = p.ID_ESTADO"
         );
         echo json_encode($rows);
         break;
@@ -124,165 +128,102 @@ switch ($accion) {
     case 'listar_residentes':
         $rows = fetchAll($conn,
             "SELECT p.ID_PERSONA, p.NOMBRE, p.APELLIDO_PATERNO, p.APELLIDO_MATERNO,
-                    (SELECT TELEFONO     FROM FIDE_TELEFONOS_TB  WHERE ID_PERSONA    = p.ID_PERSONA    AND ROWNUM=1) AS TELEFONO,
-                    (SELECT CORREO       FROM FIDE_CORREOS_TB    WHERE ID_PERSONA    = p.ID_PERSONA    AND ROWNUM=1) AS CORREO,
-                    (SELECT ID_RESIDENCIA FROM FIDE_RESIDENTES_TB WHERE ID_PERSONA   = p.ID_PERSONA    AND ROWNUM=1) AS ID_RESIDENCIA,
-                    e.ID_ESTADO, e.NOMBRE_ESTADO
-             FROM   FIDE_PERSONAS_TB p
-             LEFT JOIN FIDE_ESTADOS_TB e ON e.ID_ESTADO = p.ID_ESTADO
-             WHERE  p.ID_ROL = (SELECT ID_ROL FROM FIDE_ROLES_TB WHERE UPPER(ROL) LIKE '%RESID%' AND ROWNUM=1)
-             ORDER  BY p.ID_PERSONA"
+                    (SELECT TELEFONO     FROM FIDE_TELEFONOS_TB WHERE ID_PERSONA = p.ID_PERSONA AND ROWNUM=1) AS TELEFONO,
+                    (SELECT CORREO       FROM FIDE_CORREOS_TB   WHERE ID_PERSONA = p.ID_PERSONA AND ROWNUM=1) AS CORREO,
+                    p.ID_RESIDENCIA, p.ID_ESTADO, p.NOMBRE_ESTADO
+             FROM   FIDE_LISTAR_RESIDENTES_V p"
         );
         echo json_encode($rows);
         break;
 
     case 'listar_personas':
         $rows = fetchAll($conn,
-            "SELECT ID_PERSONA,
-                    NOMBRE || ' ' || APELLIDO_PATERNO || ' ' || APELLIDO_MATERNO AS NOMBRE_COMPLETO,
-                    ID_ROL
-             FROM   FIDE_PERSONAS_TB
-             WHERE  ID_ESTADO = 1
-             ORDER  BY NOMBRE"
+            "SELECT ID_PERSONA, NOMBRE_COMPLETO, ID_ROL
+             FROM   FIDE_LISTAR_PERSONAS_V"
         );
         echo json_encode($rows);
         break;
 
     case 'listar_trabajadores':
         $rows = fetchAll($conn,
-            "SELECT ID_PERSONA,
-                    NOMBRE || ' ' || APELLIDO_PATERNO || ' ' || APELLIDO_MATERNO AS NOMBRE_COMPLETO
-             FROM   FIDE_PERSONAS_TB
-             WHERE  ID_ROL IN (SELECT ID_ROL FROM FIDE_ROLES_TB
-                               WHERE UPPER(ROL) IN ('TRABAJADOR','TECNICO','JARDINERO'))
-               AND  ID_ESTADO = 1
-             ORDER  BY NOMBRE"
+            "SELECT ID_PERSONA, NOMBRE_COMPLETO
+             FROM   FIDE_LISTAR_TRABAJADORES_V"
         );
         echo json_encode($rows);
         break;
 
     case 'listar_residencias':
         $rows = fetchAll($conn,
-            "SELECT res.ID_RESIDENCIA, res.MONTO_ALQUILER, res.MONTO_MANTENIMIENTO,
-                    tp.TIPO AS TIPO_PAGO, tp.ID_TIPO_PAGO,
-                    e.ID_ESTADO, e.NOMBRE_ESTADO
-             FROM   FIDE_RESIDENCIAS_TB   res
-             LEFT JOIN FIDE_TIPOS_PAGO_TB tp ON tp.ID_TIPO_PAGO = res.ID_TIPO_PAGO
-             LEFT JOIN FIDE_ESTADOS_TB     e ON e.ID_ESTADO     = res.ID_ESTADO
-             ORDER  BY res.ID_RESIDENCIA"
+            "SELECT ID_RESIDENCIA, MONTO_ALQUILER, MONTO_MANTENIMIENTO,
+                    TIPO_PAGO, ID_TIPO_PAGO, ID_ESTADO, NOMBRE_ESTADO
+             FROM   FIDE_LISTAR_RESIDENCIAS_VM
+             ORDER  BY ID_RESIDENCIA"
         );
         echo json_encode($rows);
         break;
 
     case 'listar_visitas':
         $rows = fetchAll($conn,
-            "SELECT v.ID_VISITA,
-                    p.NOMBRE || ' ' || p.APELLIDO_PATERNO AS VISITANTE,
-                    v.ID_PERSONA, v.ID_ROL AS ROL_ID, rol.ROL,
-                    v.ID_RESIDENCIA,
-                    TO_CHAR(v.FECHA_INGRESO,'YYYY-MM-DD HH24:MI') AS FECHA_INGRESO,
-                    TO_CHAR(v.FECHA_SALIDA, 'YYYY-MM-DD HH24:MI') AS FECHA_SALIDA,
-                    e.ID_ESTADO, e.NOMBRE_ESTADO
-             FROM   FIDE_VISITAS_TB        v
-             LEFT JOIN FIDE_PERSONAS_TB    p   ON p.ID_PERSONA = v.ID_PERSONA
-             LEFT JOIN FIDE_ROLES_TB       rol ON rol.ID_ROL   = v.ID_ROL
-             LEFT JOIN FIDE_ESTADOS_TB     e   ON e.ID_ESTADO  = v.ID_ESTADO
-             ORDER  BY v.ID_VISITA DESC"
+            "SELECT ID_VISITA, VISITANTE, ID_PERSONA, ROL_ID, ROL,
+                    ID_RESIDENCIA, FECHA_INGRESO, FECHA_SALIDA,
+                    ID_ESTADO, NOMBRE_ESTADO
+             FROM   FIDE_LISTAR_VISITAS_V"
         );
         echo json_encode($rows);
         break;
 
     case 'listar_paquetes':
         $rows = fetchAll($conn,
-            "SELECT pk.ID_PAQUETE,
-                    p.NOMBRE || ' ' || p.APELLIDO_PATERNO AS PERSONA,
-                    pk.ID_PERSONA, pk.ID_RESIDENCIA,
-                    TO_CHAR(pk.FECHA_INGRESO,'YYYY-MM-DD HH24:MI') AS FECHA_INGRESO,
-                    TO_CHAR(pk.FECHA_SALIDA, 'YYYY-MM-DD HH24:MI') AS FECHA_SALIDA,
-                    e.ID_ESTADO, e.NOMBRE_ESTADO
-             FROM   FIDE_PAQUETES_TB      pk
-             LEFT JOIN FIDE_PERSONAS_TB   p  ON p.ID_PERSONA = pk.ID_PERSONA
-             LEFT JOIN FIDE_ESTADOS_TB    e  ON e.ID_ESTADO  = pk.ID_ESTADO
-             ORDER  BY pk.ID_PAQUETE DESC"
+            "SELECT ID_PAQUETE, PERSONA, ID_PERSONA, ID_RESIDENCIA,
+                    FECHA_INGRESO, FECHA_SALIDA, ID_ESTADO, NOMBRE_ESTADO
+             FROM   FIDE_LISTAR_PAQUETES_V"
         );
         echo json_encode($rows);
         break;
 
     case 'listar_facturas':
         $rows = fetchAll($conn,
-            "SELECT f.ID_FACTURA,
-                    TO_CHAR(f.FECHA_FACTURA,'YYYY-MM-DD') AS FECHA_FACTURA,
-                    f.DESCR_FACTURA,
-                    p.NOMBRE || ' ' || p.APELLIDO_PATERNO AS PERSONA,
-                    tp.TIPO  AS TIPO_PAGO,
-                    fp.FORMA AS FORMA_PAGO,
-                    e.NOMBRE_ESTADO
-             FROM   FIDE_FACTURAS_TB        f
-             LEFT JOIN FIDE_PERSONAS_TB     p  ON p.ID_PERSONA    = f.ID_PERSONA
-             LEFT JOIN FIDE_TIPOS_PAGO_TB   tp ON tp.ID_TIPO_PAGO = f.ID_TIPO_PAGO
-             LEFT JOIN FIDE_FORMAS_PAGOS_TB fp ON fp.ID_FORMA_PAGO= f.ID_FORMA_PAGO
-             LEFT JOIN FIDE_ESTADOS_TB      e  ON e.ID_ESTADO     = f.ID_ESTADO
-             ORDER  BY f.ID_FACTURA DESC"
+            "SELECT ID_FACTURA, FECHA_FACTURA, DESCR_FACTURA,
+                    PERSONA, TIPO_PAGO, FORMA_PAGO, NOMBRE_ESTADO
+             FROM   FIDE_LISTAR_FACTURAS_V"
         );
         echo json_encode($rows);
         break;
 
     case 'listar_servicios':
         $rows = fetchAll($conn,
-            "SELECT s.ID_SERVICIO, s.DESCR_SERVICIO,
-                    TO_CHAR(s.FECHA_SALIDA,'YYYY-MM-DD') AS FECHA_SALIDA,
-                    ts.ID_TIPO_SERVICIO, ts.TIPO_SERVICIO,
-                    s.ID_TIPO_EVENTO,
-                    e.ID_ESTADO, e.NOMBRE_ESTADO,
-                    (SELECT LISTAGG(p.NOMBRE || ' ' || p.APELLIDO_PATERNO, ', ')
-                            WITHIN GROUP (ORDER BY p.NOMBRE)
-                     FROM FIDE_PERSONAS_SERVICIOS_TB ps
-                     JOIN FIDE_PERSONAS_TB p ON p.ID_PERSONA = ps.ID_PERSONA
-                     WHERE ps.ID_SERVICIO = s.ID_SERVICIO) AS PERSONAS
-             FROM   FIDE_SERVICIOS_TB        s
-             LEFT JOIN FIDE_TIPOS_SERVICIOS_TB ts ON ts.ID_TIPO_SERVICIO = s.ID_TIPO_SERVICIO
-             LEFT JOIN FIDE_ESTADOS_TB         e  ON e.ID_ESTADO         = s.ID_ESTADO
-             ORDER  BY s.ID_SERVICIO DESC"
+            "SELECT ID_SERVICIO, DESCR_SERVICIO, FECHA_SALIDA,
+                    ID_TIPO_SERVICIO, TIPO_SERVICIO, ID_TIPO_EVENTO,
+                    ID_ESTADO, NOMBRE_ESTADO, PERSONAS
+             FROM   FIDE_LISTAR_SERVICIOS_V"
         );
         echo json_encode($rows);
         break;
 
     case 'listar_eventos':
         $rows = fetchAll($conn,
-            "SELECT ev.ID_EVENTO, ev.DESCR_EVENTO,
-                    TO_CHAR(ev.FECHA_EVENTO,'YYYY-MM-DD') AS FECHA_EVENTO,
-                    te.ID_TIPO_EVENTO, te.TIPO_EVENTO,
-                    ev.ID_TIPO_ESPACIO,
-                    e.ID_ESTADO, e.NOMBRE_ESTADO
-             FROM   FIDE_EVENTOS_TB         ev
-             LEFT JOIN FIDE_TIPOS_EVENTOS_TB te ON te.ID_TIPO_EVENTO = ev.ID_TIPO_EVENTO
-             LEFT JOIN FIDE_ESTADOS_TB        e ON e.ID_ESTADO       = ev.ID_ESTADO
-             ORDER  BY ev.ID_EVENTO DESC"
+            "SELECT ID_EVENTO, DESCR_EVENTO, FECHA_EVENTO,
+                    ID_TIPO_EVENTO, TIPO_EVENTO, ID_TIPO_ESPACIO,
+                    ID_ESTADO, NOMBRE_ESTADO
+             FROM   FIDE_LISTAR_EVENTOS_V"
         );
         echo json_encode($rows);
         break;
 
     case 'listar_vehiculos':
         $rows = fetchAll($conn,
-            "SELECT v.PLACA, v.DESCRIPCION,
-                    p.NOMBRE || ' ' || p.APELLIDO_PATERNO AS RESIDENTE,
-                    v.ID_PERSONA, v.ID_TIPO_ESPACIO,
-                    e.ID_ESTADO, e.NOMBRE_ESTADO
-             FROM   FIDE_VEHICULOS_TB      v
-             LEFT JOIN FIDE_PERSONAS_TB    p ON p.ID_PERSONA = v.ID_PERSONA
-             LEFT JOIN FIDE_ESTADOS_TB     e ON e.ID_ESTADO  = v.ID_ESTADO
-             ORDER  BY v.PLACA"
+            "SELECT PLACA, DESCRIPCION, RESIDENTE,
+                    ID_PERSONA, ID_TIPO_ESPACIO, ID_ESTADO, NOMBRE_ESTADO
+             FROM   FIDE_LISTAR_VEHICULOS_V"
         );
         echo json_encode($rows);
         break;
 
     case 'listar_espacios':
         $rows = fetchAll($conn,
-            "SELECT te.ID_TIPO_ESPACIO, te.NOMBRE_ESPACIO, te.DESCR_ESPACIO,
-                    e.ID_ESTADO, e.NOMBRE_ESTADO
-             FROM   FIDE_TIPOS_ESPACIOS_TB te
-             LEFT JOIN FIDE_ESTADOS_TB     e ON e.ID_ESTADO = te.ID_ESTADO
-             ORDER  BY te.ID_TIPO_ESPACIO"
+            "SELECT ID_TIPO_ESPACIO, NOMBRE_ESPACIO, DESCR_ESPACIO,
+                    ID_ESTADO, NOMBRE_ESTADO
+             FROM   FIDE_LISTAR_ESPACIOS_V"
         );
         echo json_encode($rows);
         break;
@@ -366,107 +307,86 @@ switch ($accion) {
 
     case 'listar_turnos':
         $idPersona = (int)($_REQUEST['id_persona'] ?? 0);
-        $base = "SELECT p.NOMBRE || ' ' || p.APELLIDO_PATERNO AS GUARDIA,
-                        TO_CHAR(f.FECHAS_TURNO,'YYYY-MM-DD') AS FECHA,
-                        h.HORARIO_TURNO, e.NOMBRE_ESTADO
-                 FROM   FIDE_TURNOS_TB t
-                 JOIN   FIDE_PERSONAS_TB        p ON p.ID_PERSONA = t.ID_PERSONA
-                 JOIN   FIDE_FECHAS_TURNOS_TB   f ON f.ID_FECHAS  = t.ID_FECHAS
-                 JOIN   FIDE_HORARIOS_TURNOS_TB h ON h.ID_HORARIO = t.ID_HORARIO
-                 LEFT JOIN FIDE_ESTADOS_TB      e ON e.ID_ESTADO  = t.ID_ESTADO
-                 WHERE  p.ID_ROL=(SELECT ID_ROL FROM FIDE_ROLES_TB WHERE UPPER(ROL) LIKE '%GUARD%' AND ROWNUM=1)";
         if ($idPersona)
-            $rows = fetchAll($conn, $base . " AND t.ID_PERSONA=:pid ORDER BY f.FECHAS_TURNO DESC, h.ID_HORARIO", [':pid'=>$idPersona]);
+            $rows = fetchAll($conn,
+                "SELECT GUARDIA, FECHA_TURNO AS FECHA, HORARIO, NOMBRE_ESTADO
+                 FROM   FIDE_LISTAR_TURNOS_V
+                 WHERE  ID_GUARDIA = :pid",
+                [':pid' => $idPersona]
+            );
         else
-            $rows = fetchAll($conn, $base . " ORDER BY f.FECHAS_TURNO DESC, h.ID_HORARIO");
+            $rows = fetchAll($conn,
+                "SELECT GUARDIA, FECHA_TURNO AS FECHA, HORARIO, NOMBRE_ESTADO
+                 FROM   FIDE_LISTAR_TURNOS_V"
+            );
         echo json_encode($rows);
         break;
 
     case 'listar_roles':
-        echo json_encode(fetchAll($conn, "SELECT ID_ROL, ROL FROM FIDE_ROLES_TB WHERE ID_ESTADO=1 ORDER BY ROL"));
+        echo json_encode(fetchAll($conn, "SELECT ID_ROL, ROL FROM FIDE_LISTAR_ROLES_V"));
         break;
 
     case 'listar_tipos_pago':
-        echo json_encode(fetchAll($conn, "SELECT ID_TIPO_PAGO, TIPO FROM FIDE_TIPOS_PAGO_TB WHERE ID_ESTADO=1 ORDER BY TIPO"));
+        echo json_encode(fetchAll($conn, "SELECT ID_TIPO_PAGO, TIPO FROM FIDE_LISTAR_TIPOS_PAGO_V"));
         break;
 
     case 'listar_formas_pago':
-        echo json_encode(fetchAll($conn, "SELECT ID_FORMA_PAGO, FORMA FROM FIDE_FORMAS_PAGOS_TB WHERE ID_ESTADO=1 ORDER BY FORMA"));
+        echo json_encode(fetchAll($conn, "SELECT ID_FORMA_PAGO, FORMA FROM FIDE_LISTAR_FORMAS_PAGO_V"));
         break;
 
     case 'listar_tipos_servicio':
-        echo json_encode(fetchAll($conn, "SELECT ID_TIPO_SERVICIO, TIPO_SERVICIO FROM FIDE_TIPOS_SERVICIOS_TB WHERE ID_ESTADO=1 ORDER BY TIPO_SERVICIO"));
+        echo json_encode(fetchAll($conn, "SELECT ID_TIPO_SERVICIO, TIPO_SERVICIO FROM FIDE_LISTAR_TIPOS_SERVICIO_V"));
         break;
 
     case 'listar_tipos_evento':
-        echo json_encode(fetchAll($conn, "SELECT ID_TIPO_EVENTO, TIPO_EVENTO FROM FIDE_TIPOS_EVENTOS_TB WHERE ID_ESTADO=1 ORDER BY TIPO_EVENTO"));
+        echo json_encode(fetchAll($conn, "SELECT ID_TIPO_EVENTO, TIPO_EVENTO FROM FIDE_LISTAR_TIPOS_EVENTO_V"));
         break;
 
     case 'listar_estados':
-        echo json_encode(fetchAll($conn, "SELECT ID_ESTADO, NOMBRE_ESTADO FROM FIDE_ESTADOS_TB ORDER BY ID_ESTADO"));
+        echo json_encode(fetchAll($conn, "SELECT ID_ESTADO, NOMBRE_ESTADO FROM FIDE_LISTAR_ESTADOS_V"));
         break;
 
     case 'listar_estados_guardia':
-        echo json_encode(fetchAll($conn, "SELECT ID_ESTADO, NOMBRE_ESTADO FROM FIDE_ESTADOS_TB WHERE ID_ESTADO != 2 ORDER BY ID_ESTADO"));
+        echo json_encode(fetchAll($conn, "SELECT ID_ESTADO, NOMBRE_ESTADO FROM FIDE_LISTAR_ESTADOS_GUARDIA_V"));
         break;
 
     case 'resumen':
-        $g  = fetchAll($conn, "SELECT COUNT(*) N FROM FIDE_PERSONAS_TB p JOIN FIDE_ROLES_TB r ON r.ID_ROL=p.ID_ROL WHERE UPPER(r.ROL) LIKE '%GUARD%' AND p.ID_ESTADO=1");
-        $re = fetchAll($conn, "SELECT COUNT(*) N FROM FIDE_RESIDENTES_TB WHERE ID_ESTADO=1");
-        $rs = fetchAll($conn, "SELECT COUNT(*) N FROM FIDE_RESIDENCIAS_TB WHERE ID_ESTADO IN (1,8,9,10)");
-        $pk = fetchAll($conn, "SELECT COUNT(*) N FROM FIDE_PAQUETES_TB   WHERE ID_ESTADO=3");
-        $ev = fetchAll($conn, "SELECT COUNT(*) N FROM FIDE_EVENTOS_TB    WHERE ID_ESTADO IN (1,12,13)");
-        $fa = fetchAll($conn, "SELECT COUNT(*) N FROM FIDE_FACTURAS_TB   WHERE ID_ESTADO IN (1,3)");
+        $row = fetchAll($conn, "SELECT * FROM FIDE_RESUMEN_GENERAL_V");
         echo json_encode([
-            'guardias'   => $g[0]['N']  ?? 0,
-            'residentes' => $re[0]['N'] ?? 0,
-            'residencias'=> $rs[0]['N'] ?? 0,
-            'paquetes'   => $pk[0]['N'] ?? 0,
-            'eventos'    => $ev[0]['N'] ?? 0,
-            'facturas'   => $fa[0]['N'] ?? 0,
+            'guardias'    => $row[0]['GUARDIAS']           ?? 0,
+            'residentes'  => $row[0]['RESIDENTES']         ?? 0,
+            'residencias' => $row[0]['RESIDENCIAS']        ?? 0,
+            'paquetes'    => $row[0]['PAQUETES_PENDIENTES'] ?? 0,
+            'eventos'     => $row[0]['EVENTOS']            ?? 0,
+            'facturas'    => $row[0]['FACTURAS']           ?? 0,
         ]);
         break;
 
     case 'ultimos_eventos':
         $rows = fetchAll($conn,
-            "SELECT * FROM (
-                SELECT ev.DESCR_EVENTO, te.TIPO_EVENTO,
-                       TO_CHAR(ev.FECHA_EVENTO,'DD/MM/YYYY') AS FECHA_EVENTO,
-                       e.NOMBRE_ESTADO
-                FROM   FIDE_EVENTOS_TB ev
-                LEFT JOIN FIDE_TIPOS_EVENTOS_TB te ON te.ID_TIPO_EVENTO = ev.ID_TIPO_EVENTO
-                LEFT JOIN FIDE_ESTADOS_TB        e ON e.ID_ESTADO       = ev.ID_ESTADO
-                ORDER  BY ev.FECHA_EVENTO DESC
-             ) WHERE ROWNUM <= 10"
+            "SELECT DESCR_EVENTO, TIPO_EVENTO, FECHA_EVENTO, NOMBRE_ESTADO
+             FROM   FIDE_ULTIMOS_EVENTOS_V"
         );
         echo json_encode($rows);
         break;
 
     case 'ultimas_visitas':
         $rows = fetchAll($conn,
-            "SELECT * FROM (
-                SELECT p.NOMBRE || ' ' || p.APELLIDO_PATERNO AS VISITANTE,
-                       v.ID_RESIDENCIA,
-                       TO_CHAR(v.FECHA_INGRESO,'DD/MM/YYYY HH24:MI') AS FECHA_INGRESO,
-                       e.NOMBRE_ESTADO
-                FROM   FIDE_VISITAS_TB v
-                LEFT JOIN FIDE_PERSONAS_TB p ON p.ID_PERSONA = v.ID_PERSONA
-                LEFT JOIN FIDE_ESTADOS_TB  e ON e.ID_ESTADO  = v.ID_ESTADO
-                ORDER  BY v.FECHA_INGRESO DESC
-             ) WHERE ROWNUM <= 10"
+            "SELECT VISITANTE, ID_RESIDENCIA, FECHA_INGRESO, NOMBRE_ESTADO
+             FROM   FIDE_ULTIMAS_VISITAS_V"
         );
         echo json_encode($rows);
         break;
 
     case 'insertar_guardia':
-        $nombre    = $_POST['nombre']           ?? '';
-        $pat       = $_POST['apellido_paterno'] ?? '';
-        $mat       = $_POST['apellido_materno'] ?? '';
-        $tel       = $_POST['telefono']         ?? '';
-        $correo    = $_POST['correo']           ?? '';
-        $usuario   = trim($_POST['usuario']     ?? '');
-        $contrasena= trim($_POST['contrasena']  ?? '');
-        $idEstado  = (int)($_POST['id_estado']  ?? 1);
+        $nombre     = $_POST['nombre']           ?? '';
+        $pat        = $_POST['apellido_paterno'] ?? '';
+        $mat        = $_POST['apellido_materno'] ?? '';
+        $tel        = $_POST['telefono']         ?? '';
+        $correo     = $_POST['correo']           ?? '';
+        $usuario    = trim($_POST['usuario']     ?? '');
+        $contrasena = trim($_POST['contrasena']  ?? '');
+        $idEstado   = (int)($_POST['id_estado']  ?? 1);
 
         if (!$usuario || !$contrasena) {
             echo json_encode(['error'=>true,'mensaje'=>'El usuario y la contraseña son requeridos.']);
@@ -527,9 +447,9 @@ switch ($accion) {
         );
         if ($r1['error'] ?? false) { echo json_encode($r1); break; }
 
-        if ($tel)         execProc($conn, "BEGIN $pkg.FIDE_TELEFONOS_INSERTAR_SP(:p1,:p2,:p3,:p4); END;", [':p1'=>$idTelefono,':p2'=>$idPersona,':p3'=>$tel,':p4'=>1]);
-        if ($correo)      execProc($conn, "BEGIN $pkg.FIDE_CORREOS_INSERTAR_SP(:p1,:p2,:p3,:p4); END;",   [':p1'=>$idCorreo,':p2'=>$idPersona,':p3'=>$correo,':p4'=>1]);
-        if ($idResidencia) execProc($conn, "BEGIN $pkg.FIDE_RESIDENTES_INSERTAR_SP(:p1,:p2,:p3); END;",   [':p1'=>$idPersona,':p2'=>$idResidencia,':p3'=>$idEstado]);
+        if ($tel)          execProc($conn, "BEGIN $pkg.FIDE_TELEFONOS_INSERTAR_SP(:p1,:p2,:p3,:p4); END;", [':p1'=>$idTelefono,':p2'=>$idPersona,':p3'=>$tel,':p4'=>1]);
+        if ($correo)       execProc($conn, "BEGIN $pkg.FIDE_CORREOS_INSERTAR_SP(:p1,:p2,:p3,:p4); END;",   [':p1'=>$idCorreo,':p2'=>$idPersona,':p3'=>$correo,':p4'=>1]);
+        if ($idResidencia) execProc($conn, "BEGIN $pkg.FIDE_RESIDENTES_INSERTAR_SP(:p1,:p2,:p3); END;",    [':p1'=>$idPersona,':p2'=>$idResidencia,':p3'=>$idEstado]);
 
         echo json_encode(['ok'=>true,'id'=>$idPersona]);
         break;
