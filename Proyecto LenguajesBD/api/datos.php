@@ -2,7 +2,6 @@
 
 ini_set('display_errors', 0);
 error_reporting(0);
-ob_start();
 
 header('Content-Type: application/json; charset=UTF-8');
 header('Access-Control-Allow-Origin: *');
@@ -59,8 +58,7 @@ function fetchAll($conn, string $sql, array $binds = []): array {
 }
 
 function jsonOut($data): void {
-    ob_clean();
-    jsonOut($data, JSON_UNESCAPED_UNICODE);
+    echo json_encode($data, JSON_UNESCAPED_UNICODE);
 }
 
 function execUpdate($conn, string $sql, array $binds): array {
@@ -299,7 +297,6 @@ switch ($accion) {
             jsonOut(['error'=>true,'mensaje'=>'Estado no permitido para guardia.']);
             break;
         }
-  
         if ($nuevoEstado === 4) {
             $sql = "UPDATE FIDE_VISITAS_TB SET ID_ESTADO=:est, FECHA_SALIDA=NULL WHERE ID_VISITA=:id";
         } elseif ($nuevoEstado === 5) {
