@@ -1,5 +1,6 @@
 <?php
 
+set_time_limit(120);
 ini_set('display_errors', 0);
 error_reporting(0);
 
@@ -125,7 +126,9 @@ switch ($accion) {
                     p.USUARIO,
                     (SELECT TELEFONO FROM FIDE_TELEFONOS_TB WHERE ID_PERSONA = p.ID_PERSONA AND ROWNUM=1) AS TELEFONO,
                     (SELECT CORREO   FROM FIDE_CORREOS_TB   WHERE ID_PERSONA = p.ID_PERSONA AND ROWNUM=1) AS CORREO,
-                    e.ID_ESTADO, e.NOMBRE_ESTADO
+                    e.ID_ESTADO, e.NOMBRE_ESTADO,
+                    $pkg.FIDE_TOTAL_TURNOS_GUARDIA_FN(p.ID_PERSONA)    AS TOTAL_TURNOS,
+                    $pkg.FIDE_TOTAL_REPORTES_PERSONA_FN(p.ID_PERSONA)  AS TOTAL_REPORTES
              FROM   FIDE_LISTAR_GUARDIAS_V p
              LEFT JOIN FIDE_ESTADOS_TB e ON e.ID_ESTADO = p.ID_ESTADO"
         );
@@ -135,18 +138,14 @@ switch ($accion) {
     case 'listar_residentes':
         $rows = fetchAll($conn,
             "SELECT p.ID_PERSONA, p.NOMBRE, p.APELLIDO_PATERNO, p.APELLIDO_MATERNO,
-                    (SELECT TELEFONO     FROM FIDE_TELEFONOS_TB WHERE ID_PERSONA = p.ID_PERSONA AND ROWNUM=1) AS TELEFONO,
-                    (SELECT CORREO       FROM FIDE_CORREOS_TB   WHERE ID_PERSONA = p.ID_PERSONA AND ROWNUM=1) AS CORREO,
-                    p.ID_RESIDENCIA, p.ID_ESTADO, p.NOMBRE_ESTADO
+                    (SELECT TELEFONO FROM FIDE_TELEFONOS_TB WHERE ID_PERSONA = p.ID_PERSONA AND ROWNUM=1) AS TELEFONO,
+                    (SELECT CORREO   FROM FIDE_CORREOS_TB   WHERE ID_PERSONA = p.ID_PERSONA AND ROWNUM=1) AS CORREO,
+                    p.ID_RESIDENCIA, p.ID_ESTADO, p.NOMBRE_ESTADO,
+                    $pkg.FIDE_TOTAL_FACTURAS_PERSONA_FN(p.ID_PERSONA)     AS TOTAL_FACTURAS,
+                    $pkg.FIDE_MONTO_FACTURADO_PERSONA_FN(p.ID_PERSONA)    AS FACTURAS_ACTIVAS,
+                    $pkg.FIDE_TOTAL_VEHICULOS_PERSONA_FN(p.ID_PERSONA)    AS TOTAL_VEHICULOS,
+                    $pkg.FIDE_TOTAL_VISITAS_RESIDENCIA_FN(p.ID_RESIDENCIA) AS TOTAL_VISITAS
              FROM   FIDE_LISTAR_RESIDENTES_V p"
-        );
-        jsonOut($rows);
-        break;
-
-    case 'listar_personas':
-        $rows = fetchAll($conn,
-            "SELECT ID_PERSONA, NOMBRE_COMPLETO, ID_ROL
-             FROM   FIDE_LISTAR_PERSONAS_V"
         );
         jsonOut($rows);
         break;
@@ -159,10 +158,12 @@ switch ($accion) {
         jsonOut($rows);
         break;
 
-    case 'listar_residencias':
+   case 'listar_residencias':
         $rows = fetchAll($conn,
             "SELECT ID_RESIDENCIA, MONTO_ALQUILER, MONTO_MANTENIMIENTO,
-                    TIPO_PAGO, ID_TIPO_PAGO, ID_ESTADO, NOMBRE_ESTADO
+                    TIPO_PAGO, ID_TIPO_PAGO, ID_ESTADO, NOMBRE_ESTADO,
+                    $pkg.FIDE_TOTAL_RESIDENTES_RESIDENCIA_FN(ID_RESIDENCIA) AS TOTAL_RESIDENTES,
+                    $pkg.FIDE_TOTAL_PAQUETES_RESIDENCIA_FN(ID_RESIDENCIA)   AS TOTAL_PAQUETES
              FROM   FIDE_LISTAR_RESIDENCIAS_VM
              ORDER  BY ID_RESIDENCIA"
         );
@@ -804,7 +805,120 @@ switch ($accion) {
         $placa = strtoupper(trim($_REQUEST['placa'] ?? ''));
         jsonOut(execProc($conn,"BEGIN $pkg.FIDE_VEHICULOS_ELIMINAR_SP(:p1); END;",[':p1'=>$placa]));
         break;
-
+// ── Todos los conteos de una persona (residente o guardia) ──────────────
+    case 'stats_persona':
+        $id = (int)($_REQUEST['id_persona'] ?? 0);
+        if (!$id) { jsonOut(['error' => true, 'mensaje' => 'id_persona requerido']); break; }
+        $callFn = function($func, $param) use ($conn, $pkg) {
+            $rows = fetchAll($conn, "SELECT {$pkg}.{$func}(:p) AS TOTAL FROM DUAL", [':p' => $param]);
+            return (int)($rows[0]['TOTAL'] ?? 0);
+        };
+        jsonOut([
+            'total_facturas'   => $callFn('FIDE_TOTAL_FACTURAS_PERSONA_FN',   $id),
+            'facturas_activas' => $callFn('FIDE_MONTO_FACTURADO_PERSONA_FN',  $id),
+            'vehiculos'        => $callFn('FIDE_TOTAL_VEHICULOS_PERSONA_FN',  $id),
+            'servicios'        => $callFn('FIDE_TOTAL_SERVICIOS_PERSONA_FN',  $id),
+            'consultas'        => $callFn('FIDE_TOTAL_CONSULTAS_PERSONA_FN',  $id),
+            'reportes'         => $callFn('FIDE_TOTAL_REPORTES_PERSONA_FN',   $id),
+            'turnos'           => $callFn('FIDE_TOTAL_TURNOS_GUARDIA_FN',     $id),
+        ]);
+        break;
+ 
+    // ── Todos los conteos de una residencia ────────────────────────────────
+    case 'stats_residencia':
+        $id = (int)($_REQUEST['id_residencia'] ?? 0);
+        if (!$id) { jsonOut(['error' => true, 'mensaje' => 'id_residencia requerido']); break; }
+        $callFn = function($func, $param) use ($conn, $pkg) {
+            $rows = fetchAll($conn, "SELECT {$pkg}.{$func}(:p) AS TOTAL FROM DUAL", [':p' => $param]);
+            return (int)($rows[0]['TOTAL'] ?? 0);
+        };
+        jsonOut([
+            'visitas'    => $callFn('FIDE_TOTAL_VISITAS_RESIDENCIA_FN',    $id),
+            'paquetes'   => $callFn('FIDE_TOTAL_PAQUETES_RESIDENCIA_FN',   $id),
+            'residentes' => $callFn('FIDE_TOTAL_RESIDENTES_RESIDENCIA_FN', $id),
+        ]);
+        break;
+ 
+    // ── Desglose de facturas por estado, tipo de pago y forma de pago ──────
+    case 'stats_facturas':
+        $callFn = function($func, $param) use ($conn, $pkg) {
+            $rows = fetchAll($conn, "SELECT {$pkg}.{$func}(:p) AS TOTAL FROM DUAL", [':p' => $param]);
+            return (int)($rows[0]['TOTAL'] ?? 0);
+        };
+        $estados    = fetchAll($conn, "SELECT ID_ESTADO,    NOMBRE_ESTADO FROM FIDE_LISTAR_ESTADOS_V");
+        $tiposPago  = fetchAll($conn, "SELECT ID_TIPO_PAGO, TIPO          FROM FIDE_LISTAR_TIPOS_PAGO_V");
+        $formasPago = fetchAll($conn, "SELECT ID_FORMA_PAGO, FORMA        FROM FIDE_LISTAR_FORMAS_PAGO_V");
+ 
+        $porEstado = [];
+        foreach ($estados as $e) {
+            $t = $callFn('FIDE_TOTAL_FACTURAS_ESTADO_FN', $e['ID_ESTADO']);
+            if ($t > 0) $porEstado[] = ['nombre' => $e['NOMBRE_ESTADO'], 'total' => $t];
+        }
+        $porTipoPago = [];
+        foreach ($tiposPago as $t) {
+            $tot = $callFn('FIDE_TOTAL_FACTURAS_TIPO_PAGO_FN', $t['ID_TIPO_PAGO']);
+            if ($tot > 0) $porTipoPago[] = ['nombre' => $t['TIPO'], 'total' => $tot];
+        }
+        $porFormaPago = [];
+        foreach ($formasPago as $f) {
+            $tot = $callFn('FIDE_TOTAL_FACTURAS_FORMA_PAGO_FN', $f['ID_FORMA_PAGO']);
+            if ($tot > 0) $porFormaPago[] = ['nombre' => $f['FORMA'], 'total' => $tot];
+        }
+        jsonOut([
+            'por_estado'     => $porEstado,
+            'por_tipo_pago'  => $porTipoPago,
+            'por_forma_pago' => $porFormaPago,
+        ]);
+        break;
+ 
+    // ── Conteo de servicios por tipo ────────────────────────────────────────
+    case 'stats_servicios_tipo':
+        $callFn = function($func, $param) use ($conn, $pkg) {
+            $rows = fetchAll($conn, "SELECT {$pkg}.{$func}(:p) AS TOTAL FROM DUAL", [':p' => $param]);
+            return (int)($rows[0]['TOTAL'] ?? 0);
+        };
+        $tipos  = fetchAll($conn, "SELECT ID_TIPO_SERVICIO, TIPO_SERVICIO FROM FIDE_LISTAR_TIPOS_SERVICIO_V");
+        $result = [];
+        foreach ($tipos as $t) {
+            $result[] = [
+                'tipo'  => $t['TIPO_SERVICIO'],
+                'total' => $callFn('FIDE_TOTAL_SERVICIOS_TIPO_FN', $t['ID_TIPO_SERVICIO']),
+            ];
+        }
+        jsonOut($result);
+        break;
+ 
+    // ── Conteo de eventos por tipo ──────────────────────────────────────────
+    case 'stats_eventos_tipo':
+        $callFn = function($func, $param) use ($conn, $pkg) {
+            $rows = fetchAll($conn, "SELECT {$pkg}.{$func}(:p) AS TOTAL FROM DUAL", [':p' => $param]);
+            return (int)($rows[0]['TOTAL'] ?? 0);
+        };
+        $tipos  = fetchAll($conn, "SELECT ID_TIPO_EVENTO, TIPO_EVENTO FROM FIDE_LISTAR_TIPOS_EVENTO_V");
+        $result = [];
+        foreach ($tipos as $t) {
+            $result[] = [
+                'tipo'  => $t['TIPO_EVENTO'],
+                'total' => $callFn('FIDE_TOTAL_EVENTOS_TIPO_FN', $t['ID_TIPO_EVENTO']),
+            ];
+        }
+        jsonOut($result);
+        break;
+ 
+    // ── Verificar si una residencia tiene residentes antes de eliminarla ────
+    case 'verificar_residentes_residencia':
+        $id = (int)($_REQUEST['id_residencia'] ?? 0);
+        if (!$id) { jsonOut(['error' => true, 'mensaje' => 'id_residencia requerido']); break; }
+        $rows  = fetchAll($conn,
+            "SELECT $pkg.FIDE_TOTAL_RESIDENTES_RESIDENCIA_FN(:p) AS TOTAL FROM DUAL",
+            [':p' => $id]
+        );
+        $total = (int)($rows[0]['TOTAL'] ?? 0);
+        jsonOut([
+            'total_residentes' => $total,
+            'puede_eliminar'   => ($total === 0),
+        ]);
+        break;
     default:
         http_response_code(400);
         jsonOut(['error'=>true,'mensaje'=>"Acción '$accion' no reconocida."]);

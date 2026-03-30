@@ -67,7 +67,8 @@
                         <thead>
                             <tr>
                                 <th>Nombre</th><th>Apellidos</th><th>Teléfono</th>
-                                <th>Correo</th><th>Usuario</th><th>Estado</th><th>Acciones</th>
+                                <th>Correo</th><th>Usuario</th><th>Estado</th>
+                                <th>Turnos</th><th>Reportes</th><th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -107,7 +108,8 @@
                         <thead>
                             <tr>
                                 <th>Nombre</th><th>Apellidos</th><th>Teléfono</th>
-                                <th>Correo</th><th>Residencia</th><th>Estado</th><th>Acciones</th>
+                                <th>Correo</th><th>Residencia</th><th>Estado</th>
+                                <th>Facturas</th><th>Activas</th><th>Vehículos</th><th>Visitas</th><th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -147,7 +149,7 @@
                         <thead>
                             <tr>
                                 <th>ID</th><th>Monto Alquiler</th><th>Monto Mantenimiento</th>
-                                <th>Tipo de Pago</th><th>Estado</th><th>Acciones</th>
+                                <th>Tipo de Pago</th><th>Estado</th><th>Residentes</th><th>Paquetes</th><th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -201,13 +203,27 @@
 
         <section id="facturas" class="seccion">
             <h2>Facturas y Pagos</h2>
+            <div class="stats-panel">
+                <div class="stats-bloque" id="stats-por-estado">
+                    <h4 class="stats-titulo">📋 Por Estado</h4>
+                    <p style="color:#aaa">Cargando...</p>
+                </div>
+                <div class="stats-bloque" id="stats-por-tipo-pago">
+                    <h4 class="stats-titulo">🗓️ Por Tipo de Pago</h4>
+                    <p style="color:#aaa">Cargando...</p>
+                </div>
+                <div class="stats-bloque" id="stats-por-forma-pago">
+                    <h4 class="stats-titulo">💳 Por Forma de Pago</h4>
+                    <p style="color:#aaa">Cargando...</p>
+                </div>
+            </div>
             <div class="contenedor-principal">
                 <div class="bloque-tabla">
                     <table>
                         <thead>
                             <tr>
-                                <th>Fecha</th><th>Descripción</th><th>Persona</th>
-                                <th>Tipo Pago</th><th>Forma Pago</th><th>Estado</th><th>Acciones</th>
+                                <th>Fecha</th><th>Descripcion</th><th>Persona</th>
+                                <th>Tipo de Pago</th><th>Forma de Pago</th><th>Estado</th><th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -237,13 +253,22 @@
 
         <section id="servicios" class="seccion">
             <h2>Servicios</h2>
+
+            <div class="stats-panel">
+                <div class="stats-bloque" style="flex:1">
+                    <h4 class="stats-titulo">🔧 Servicios por Tipo</h4>
+                    <div id="stats-servicios-tipo">
+                        <p style="color:#aaa">Cargando...</p>
+                    </div>
+                </div>
+            </div>
             <div class="contenedor-principal">
                 <div class="bloque-tabla">
                     <table>
                         <thead>
                             <tr>
-                                <th>Descripción</th><th>Tipo</th><th>Fecha Salida</th>
-                                <th>Persona(s)</th><th>Estado</th><th>Acciones</th>
+                                <th>Descripcion</th><th>Tipo de Servicio</th><th>Fecha de Salida</th>
+                                <th>Personas</th><th>Estado</th><th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -271,13 +296,20 @@
 
         <section id="eventos" class="seccion">
             <h2>Eventos / Incidentes</h2>
+            <div class="stats-panel">
+                <div class="stats-bloque" style="flex:1">
+                    <h4 class="stats-titulo">📅 Eventos por Tipo</h4>
+                    <div id="stats-eventos-tipo">
+                        <p style="color:#aaa">Cargando...</p>
+                    </div>
+                </div>
+            </div>
             <div class="contenedor-principal">
                 <div class="bloque-tabla">
                     <table>
                         <thead>
                             <tr>
-                                <th>Descripción</th><th>Tipo</th><th>Fecha</th>
-                                <th>Estado</th><th>Acciones</th>
+                                <th>Descripcion</th><th>Tipo</th><th>Fecha</th><th>Estado</th><th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
