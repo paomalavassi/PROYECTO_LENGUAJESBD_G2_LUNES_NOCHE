@@ -50,6 +50,25 @@ footer {
     flex-wrap: wrap;
 }
 
+.contenedor-login-unico {
+    display: flex;
+    justify-content: center;
+    margin-top: 30px;
+}
+
+.card-login-unico {
+    width: 360px;
+}
+
+.card-login-unico select {
+    padding: 6px;
+    margin-bottom: 10px;
+    border: 1px solid #a09e9e;
+    border-radius: 3px;
+    width: 100%;
+    font-size: 0.95em;
+}
+
 .card-rol {
     background-color: #ffffff;
     border: 1px solid #a39f9f;

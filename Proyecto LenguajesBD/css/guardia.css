@@ -280,5 +280,36 @@ tbody tr:hover {
 .btn-editar   { background-color: #1768c5; }
 .btn-editar:hover  { background-color: #0d3e88; }
 
-.btn-prog     { background-color: #9271c3; }
+.btn-prog     { background-color: #9271c3; color: #ffffff; }
 .btn-prog:hover    { background-color: #523974; }
+.btn-proceso  { background-color: #1e7cbf; color: #ffffff; }
+.btn-proceso:hover { background-color: #125280; }
+.btn-resuelto { background-color: #2e7e3d; color: #ffffff; }
+.btn-resuelto:hover{ background-color: #1b5125; }
+.btn-final    { background-color: #575353; color: #ffffff; }
+.btn-final:hover   { background-color: #282626; }
+
+.tabs-seccion {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 18px;
+    border-bottom: 2px solid #c9c4c4;
+    padding-bottom: 6px;
+}
+.tab-btn {
+    padding: 6px 18px;
+    border: 1px solid #b9b0b0;
+    border-radius: 4px 4px 0 0;
+    background: #ffffff;
+    cursor: pointer;
+    font-size: 0.9em;
+    color: #535151;
+}
+.tab-btn.activo {
+    background: #9a6a30;
+    color: #ffffff;
+    border-color: #9a6a30;
+    font-weight: bold;
+}
+.tab-contenido { display: none; }
+.tab-contenido.activo { display: block; }

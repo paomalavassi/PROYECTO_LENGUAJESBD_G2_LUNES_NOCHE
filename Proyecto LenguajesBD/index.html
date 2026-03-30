@@ -17,37 +17,28 @@
 
     <main>
         <section class="seccion-login">
-            <h2>Seleccione su perfil</h2>
-            <p>Ingrese con las credenciales correspondientes a su rol</p>
+            <h2>Iniciar sesión</h2>
+            <p>Ingrese sus credenciales para acceder al sistema</p>
 
-            <div class="contenedor-roles">
+            <div class="contenedor-login-unico">
+                <div class="card-rol card-login-unico">
+                    <form id="formLogin">
+                        <label for="loginUsuario">Usuario</label>
+                        <input type="text" id="loginUsuario" placeholder="Usuario">
 
-                <div class="card-rol">
-                    <h3>Guardia</h3>
-                    <p>Control de accesos, visitantes y paquetes</p>
-                    <form id="formGuardia">
-                        <label for="usuarioGuardia">Usuario</label><br>
-                        <input type="text" id="usuarioGuardia" placeholder="Usuario"><br>
-                        <label for="claveGuardia">Contraseña</label><br>
-                        <input type="password" id="claveGuardia" placeholder="Contraseña"><br>
-                        <span id="errorGuardia" class="mensaje-error"></span><br>
-                        <button type="submit">Ingresar como Guardia</button>
+                        <label for="loginClave">Contraseña</label>
+                        <input type="password" id="loginClave" placeholder="Contraseña">
+
+                        <label for="loginRol">Ingresar como</label>
+                        <select id="loginRol">
+                            <option value="guardia">Guardia</option>
+                            <option value="admin">Administrador</option>
+                        </select>
+
+                        <span id="errorLogin" class="mensaje-error"></span>
+                        <button type="submit">Ingresar</button>
                     </form>
                 </div>
-
-                <div class="card-rol">
-                    <h3>Administrador</h3>
-                    <p>Gestión completa del condominio</p>
-                    <form id="formAdmin">
-                        <label for="usuarioAdmin">Usuario</label><br>
-                        <input type="text" id="usuarioAdmin" placeholder="Usuario"><br>
-                        <label for="claveAdmin">Contraseña</label><br>
-                        <input type="password" id="claveAdmin" placeholder="Contraseña"><br>
-                        <span id="errorAdmin" class="mensaje-error"></span><br>
-                        <button type="submit">Ingresar como Administrador</button>
-                    </form>
-                </div>
-
             </div>
         </section>
     </main>
@@ -57,12 +48,22 @@
     </footer>
 
     <script>
-        let formGuardia = document.getElementById("formGuardia");
-        let formAdmin   = document.getElementById("formAdmin");
+        document.getElementById("formLogin").addEventListener("submit", async function (event) {
+            event.preventDefault();
+            const usuario = document.getElementById("loginUsuario").value.trim();
+            const clave   = document.getElementById("loginClave").value.trim();
+            const rol     = document.getElementById("loginRol").value;
+            const errorEl = document.getElementById("errorLogin");
 
-        async function login(usuario, clave, rol, errorEl) {
             errorEl.style.display = 'none';
             errorEl.innerText = '';
+
+            if (!usuario || !clave) {
+                errorEl.innerText = "Por favor complete todos los campos.";
+                errorEl.style.display = "block";
+                return;
+            }
+
             try {
                 const res = await fetch('api/datos.php', {
                     method: 'POST',
@@ -74,42 +75,15 @@
                     errorEl.innerText = data.mensaje;
                     errorEl.style.display = 'block';
                 } else {
-                    // Guardar datos básicos de sesión en sessionStorage
                     sessionStorage.setItem('id_persona', data.id_persona);
                     sessionStorage.setItem('nombre',     data.nombre);
                     sessionStorage.setItem('rol',        data.rol);
                     window.location.href = (rol === 'guardia') ? 'guardia.html' : 'admin.html';
                 }
             } catch (err) {
-                errorEl.innerText = 'Error de conexión con el servidor.';
+                errorEl.innerText = 'Error de conexion con el servidor.';
                 errorEl.style.display = 'block';
             }
-        }
-
-        formGuardia.addEventListener("submit", function (event) {
-            event.preventDefault();
-            const usuario = document.getElementById("usuarioGuardia").value.trim();
-            const clave   = document.getElementById("claveGuardia").value.trim();
-            const error   = document.getElementById("errorGuardia");
-            if (!usuario || !clave) {
-                error.innerText = "Por favor complete todos los campos.";
-                error.style.display = "block";
-                return;
-            }
-            login(usuario, clave, 'guardia', error);
-        });
-
-        formAdmin.addEventListener("submit", function (event) {
-            event.preventDefault();
-            const usuario = document.getElementById("usuarioAdmin").value.trim();
-            const clave   = document.getElementById("claveAdmin").value.trim();
-            const error   = document.getElementById("errorAdmin");
-            if (!usuario || !clave) {
-                error.innerText = "Por favor complete todos los campos.";
-                error.style.display = "block";
-                return;
-            }
-            login(usuario, clave, 'admin', error);
         });
     </script>
 

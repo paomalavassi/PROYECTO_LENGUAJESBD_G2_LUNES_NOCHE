@@ -23,10 +23,8 @@ function estadoBadge(estado) {
         return `<span class="estado-activo">${estado}</span>`;
     if (['PENDIENTE','AFUERA','PROGRAMADO','EN MANTENIMIENTO','EN VACACIONES'].includes(e))
         return `<span class="estado-pendiente">${estado}</span>`;
-    if (e === 'LIBRE')
-        return `<span class="estado-libre">${estado}</span>`;
-    if (e === 'RESERVADO')
-        return `<span class="estado-reservado">${estado}</span>`;
+    if (e === 'LIBRE')     return `<span class="estado-libre">${estado}</span>`;
+    if (e === 'RESERVADO') return `<span class="estado-reservado">${estado}</span>`;
     return `<span class="estado-inactivo">${estado}</span>`;
 }
 
@@ -49,6 +47,14 @@ function mostrarMensaje(contenedor, texto, esError = false) {
     el.textContent = texto;
     el.style.display = 'block';
     setTimeout(() => { el.style.display = 'none'; }, 5000);
+}
+
+function cambiarTabVehiculos(tab) {
+    document.querySelectorAll('.tabs-seccion .tab-btn').forEach((b, i) => {
+        b.classList.toggle('activo', (i === 0 && tab === 'residentes') || (i === 1 && tab === 'visitas'));
+    });
+    document.getElementById('tab-veh-residentes').classList.toggle('activo', tab === 'residentes');
+    document.getElementById('tab-veh-visitas').classList.toggle('activo',    tab === 'visitas');
 }
 
 async function cargarResumenGuardia() {
@@ -74,8 +80,8 @@ async function cargarTurnos() {
         const tb   = document.querySelector('#turnos table tbody');
         if (!tb) return;
         tb.innerHTML = data.map(t =>
-            `<tr><td>${t.GUARDIA}</td><td>${t.FECHA}</td>
-             <td>${t.HORARIO_TURNO}</td><td>${estadoBadge(t.NOMBRE_ESTADO)}</td></tr>`
+            `<tr><td>${t.GUARDIA}</td><td>${t.FECHA_TURNO ?? t.FECHA}</td>
+             <td>${t.HORARIO}</td><td>${estadoBadge(t.NOMBRE_ESTADO)}</td></tr>`
         ).join('') || '<tr><td colspan="4">Sin turnos</td></tr>';
     } catch (e) { console.error('turnos:', e); }
 }
@@ -112,7 +118,7 @@ async function cambiarEstadoVisita(id, estado) {
 }
 
 function editarVisita(id, visitante, idResidencia, idRol, fechaIngreso, fechaSalida, idEstado) {
-    const form = document.querySelector('#visitantes .bloque-formulario form');
+    const form = document.getElementById('form-visitante');
     if (!form) return;
     const inputs = form.querySelectorAll('input, select, textarea');
     inputs[0].value = visitante;
@@ -131,12 +137,27 @@ function editarVisita(id, visitante, idResidencia, idRol, fechaIngreso, fechaSal
 
 async function guardarVisita(e) {
     e.preventDefault();
-    const form   = document.querySelector('#visitantes .bloque-formulario form');
+    const form   = document.getElementById('form-visitante');
     const inputs = form.querySelectorAll('input, select, textarea');
     const editId = form.dataset.editId;
 
+    if (editId) {
+        const idEstado = parseInt(inputs[5]?.value ?? 0);
+        if (!idEstado) { mostrarMensaje(form.closest('.bloque-formulario'), 'Seleccione un estado.', true); return; }
+        if (![4,5,6].includes(idEstado)) {
+            mostrarMensaje(form.closest('.bloque-formulario'), 'Solo puede usar estados: Adentro, Salida o Vetado.', true);
+            return;
+        }
+        const r = await api({ accion:'actualizar_estado_visita', id:editId, estado:idEstado });
+        if (r.error) { mostrarMensaje(form.closest('.bloque-formulario'), 'Error: ' + r.mensaje, true); return; }
+        mostrarMensaje(form.closest('.bloque-formulario'), 'Estado actualizado.');
+        cancelarEdicionVisita();
+        cargarVisitantes();
+        return;
+    }
+
     const data = {
-        accion:           editId ? 'insertar_visita' : 'insertar_visita',
+        accion:           'insertar_visita',
         nombre_visitante: inputs[0].value.trim(),
         id_residencia:    inputs[1].value,
         id_rol:           inputs[2].value,
@@ -146,21 +167,9 @@ async function guardarVisita(e) {
         id_persona:       0,
     };
 
-    if (editId) {
-        if (data.id_estado && ![4,5,6].includes(parseInt(data.id_estado))) {
-            mostrarMensaje(form.closest('.bloque-formulario'), 'Guardias no pueden poner ese estado. Solo Adentro, Afuera o Vetado.', true);
-            return;
-        }
-        const r = await api({ accion:'actualizar_estado_visita', id:editId, estado:data.id_estado });
-        if (r.error) { mostrarMensaje(form.closest('.bloque-formulario'), 'Error: ' + r.mensaje, true); return; }
-        cancelarEdicionVisita();
-        cargarVisitantes();
-        return;
-    }
-
     if (!data.nombre_visitante) { mostrarMensaje(form.closest('.bloque-formulario'), 'El nombre es requerido.', true); return; }
     if (!data.id_residencia)    { mostrarMensaje(form.closest('.bloque-formulario'), 'Seleccione una residencia.', true); return; }
-    if (data.id_estado == '2') { mostrarMensaje(form.closest('.bloque-formulario'), 'No puede poner estado Inactivo.', true); return; }
+    if (data.id_estado == '2')  { mostrarMensaje(form.closest('.bloque-formulario'), 'No puede poner estado Inactivo.', true); return; }
 
     const r = await api(data);
     if (r.error) {
@@ -174,11 +183,12 @@ async function guardarVisita(e) {
 }
 
 function cancelarEdicionVisita() {
-    const form = document.querySelector('#visitantes .bloque-formulario form');
+    const form = document.getElementById('form-visitante');
     if (!form) return;
     form.reset(); delete form.dataset.editId;
     resetFormTitulo(form, 'Registrar Visitante');
     ocultarCancelarEdicion(form);
+    form.querySelector('button[type="submit"]').textContent = 'Guardar';
 }
 
 async function cargarPaquetes() {
@@ -210,7 +220,7 @@ async function marcarEntregado(id) {
 
 async function guardarPaquete(e) {
     e.preventDefault();
-    const form   = document.querySelector('#paquetes .bloque-formulario form');
+    const form   = document.getElementById('form-paquete');
     const inputs = form.querySelectorAll('input, select, textarea');
     const data = {
         accion:        'insertar_paquete',
@@ -232,10 +242,10 @@ async function guardarPaquete(e) {
     }
 }
 
-async function cargarVehiculos() {
+async function cargarVehiculosResidentes() {
     try {
-        const data = await apiGet('listar_vehiculos');
-        const tb   = document.querySelector('#vehiculos .bloque-tabla table tbody');
+        const data = await apiGet('listar_vehiculos_residentes');
+        const tb   = document.querySelector('#tabla-veh-residentes tbody');
         if (!tb) return;
         tb.innerHTML = data.map(v => `
             <tr>
@@ -247,11 +257,11 @@ async function cargarVehiculos() {
                     <button class="btn-acc btn-adentro" onclick="cambiarEstadoVehiculo('${v.PLACA}',4)">↓ Adentro</button>
                     <button class="btn-acc btn-salida"  onclick="cambiarEstadoVehiculo('${v.PLACA}',5)">↑ Afuera</button>
                     <button class="btn-acc btn-vetar"   onclick="cambiarEstadoVehiculo('${v.PLACA}',6)">✕ Vetar</button>
-                    <button class="btn-acc btn-editar"  onclick="editarVehiculo('${v.PLACA}','${(v.DESCRIPCION||'').replace(/'/g,"\\'")}',${v.ID_PERSONA??0},${v.ID_ESTADO??1})">✎ Editar</button>
+                    <button class="btn-acc btn-editar"  onclick="editarVehiculoResidente('${v.PLACA}','${(v.DESCRIPCION||'').replace(/'/g,"\\'")}',${v.ID_PERSONA??0},${v.ID_ESTADO??1})">✎ Editar</button>
                 </td>
             </tr>`
-        ).join('') || '<tr><td colspan="5">Sin vehículos</td></tr>';
-    } catch (e) { console.error('vehículos:', e); }
+        ).join('') || '<tr><td colspan="5">Sin vehículos de residentes</td></tr>';
+    } catch (e) { console.error('vehículos residentes:', e); }
 }
 
 async function cambiarEstadoVehiculo(placa, estado) {
@@ -259,65 +269,126 @@ async function cambiarEstadoVehiculo(placa, estado) {
     if (!confirm(`¿Registrar ${etiquetas[estado]} para el vehículo ${placa}?`)) return;
     const r = await api({ accion:'actualizar_estado_vehiculo', placa, estado });
     if (r.error) { alert('Error: ' + r.mensaje); return; }
-    cargarVehiculos();
+    cargarVehiculosResidentes(); cargarVehiculosVisitas();
 }
 
-function editarVehiculo(placa, descripcion, idPersona, idEstado) {
-    const form = document.querySelector('#vehiculos .bloque-formulario form');
+function editarVehiculoResidente(placa, descripcion, idPersona, idEstado) {
+    const form = document.getElementById('form-vehiculo-residente');
     if (!form) return;
     const inputs = form.querySelectorAll('input, select');
     inputs[0].value = placa;
     inputs[0].readOnly = true;
     if (inputs[1]) inputs[1].value = descripcion;
-    if (inputs[2]) inputs[2].value = idPersona;
-    if (inputs[3]) inputs[3].value = idEstado;
+    const selPer = document.getElementById('sel-veh-res-persona');
+    if (selPer) selPer.value = idPersona;
+    const selEst = document.getElementById('sel-veh-res-estado');
+    if (selEst) selEst.value = idEstado;
     form.dataset.editPlaca = placa;
-    resetFormTitulo(form, '✎ Editar Vehículo');
+    resetFormTitulo(form, '✎ Editar Vehículo de Residente');
     mostrarCancelarEdicion(form);
     form.querySelector('button[type="submit"]').textContent = 'Actualizar';
     form.closest('.bloque-formulario').scrollIntoView({ behavior:'smooth' });
 }
 
-async function guardarVehiculo(e) {
+async function guardarVehiculoResidente(e) {
     e.preventDefault();
-    const form   = document.querySelector('#vehiculos .bloque-formulario form');
+    const form  = document.getElementById('form-vehiculo-residente');
     const inputs = form.querySelectorAll('input, select');
     const placa  = form.dataset.editPlaca || inputs[0].value.trim().toUpperCase();
+    const idEstado = document.getElementById('sel-veh-res-estado')?.value;
 
-    if (data_id_estado && ['2'].includes(String(inputs[3]?.value))) {
+    if (String(idEstado) === '2') {
         mostrarMensaje(form.closest('.bloque-formulario'), 'No puede poner estado Inactivo.', true); return;
     }
 
-    const data = {
-        accion:          form.dataset.editPlaca ? 'actualizar_estado_vehiculo' : 'insertar_vehiculo',
-        placa,
-        descripcion:     inputs[1].value.trim(),
-        id_persona:      inputs[2].value,
-        id_estado:       inputs[3].value,
-        id_tipo_espacio: 1,
-    };
-
     if (form.dataset.editPlaca) {
-        data.accion = 'actualizar_estado_vehiculo';
-        data.estado = inputs[3].value;
-        if (!['4','5','6'].includes(String(data.estado))) {
+        if (!['4','5','6'].includes(String(idEstado))) {
             mostrarMensaje(form.closest('.bloque-formulario'), 'Guardias solo pueden poner: Adentro, Afuera o Vetado.', true); return;
         }
+        const r = await api({ accion:'actualizar_estado_vehiculo', placa, estado: idEstado });
+        if (r.error) { mostrarMensaje(form.closest('.bloque-formulario'), 'Error: ' + r.mensaje, true); return; }
+        mostrarMensaje(form.closest('.bloque-formulario'), 'Estado actualizado.');
+        form.reset(); inputs[0].readOnly = false;
+        delete form.dataset.editPlaca;
+        resetFormTitulo(form, 'Registrar Vehículo de Residente');
+        ocultarCancelarEdicion(form);
+        form.querySelector('button[type="submit"]').textContent = 'Guardar';
+        cargarVehiculosResidentes();
+        return;
     }
 
     if (!placa) { mostrarMensaje(form.closest('.bloque-formulario'), 'La placa es requerida.', true); return; }
+
+    const data = {
+        accion:          'insertar_vehiculo',
+        placa,
+        descripcion:     inputs[1].value.trim(),
+        id_persona:      document.getElementById('sel-veh-res-persona')?.value ?? '',
+        id_estado:       idEstado,
+        id_tipo_espacio: 1,
+    };
 
     const r = await api(data);
     if (r.error) {
         mostrarMensaje(form.closest('.bloque-formulario'), 'Error: ' + r.mensaje, true);
     } else {
-        mostrarMensaje(form.closest('.bloque-formulario'), form.dataset.editPlaca ? 'Vehículo actualizado.' : 'Vehículo registrado.');
+        mostrarMensaje(form.closest('.bloque-formulario'), 'Vehículo registrado.');
         form.reset(); inputs[0].readOnly = false;
         delete form.dataset.editPlaca;
-        resetFormTitulo(form, 'Registrar Vehículo');
+        resetFormTitulo(form, 'Registrar Vehículo de Residente');
         ocultarCancelarEdicion(form);
         form.querySelector('button[type="submit"]').textContent = 'Guardar';
-        cargarVehiculos();
+        cargarVehiculosResidentes();
+    }
+}
+
+async function cargarVehiculosVisitas() {
+    try {
+        const data = await apiGet('listar_vehiculos_visitas');
+        const tb   = document.querySelector('#tabla-veh-visitas tbody');
+        if (!tb) return;
+        tb.innerHTML = data.map(v => `
+            <tr>
+                <td>${v.PLACA}</td>
+                <td>${v.DESCRIPCION}</td>
+                <td>${v.VISITANTE}</td>
+                <td>${estadoBadge(v.NOMBRE_ESTADO)}</td>
+                <td class="acciones-celda">
+                    <button class="btn-acc btn-adentro" onclick="cambiarEstadoVehiculo('${v.PLACA}',4)">↓ Adentro</button>
+                    <button class="btn-acc btn-salida"  onclick="cambiarEstadoVehiculo('${v.PLACA}',5)">↑ Afuera</button>
+                    <button class="btn-acc btn-vetar"   onclick="cambiarEstadoVehiculo('${v.PLACA}',6)">✕ Vetar</button>
+                </td>
+            </tr>`
+        ).join('') || '<tr><td colspan="5">Sin vehículos de visitas</td></tr>';
+    } catch (e) { console.error('vehículos visitas:', e); }
+}
+
+async function guardarVehiculoVisita(e) {
+    e.preventDefault();
+    const form   = document.getElementById('form-vehiculo-visita');
+    const inputs = form.querySelectorAll('input');
+    const placa  = inputs[0].value.trim().toUpperCase();
+    const desc   = inputs[1].value.trim();
+    const idPersona = document.getElementById('sel-veh-vis-persona')?.value;
+    const idEstado  = document.getElementById('sel-veh-vis-estado')?.value;
+
+    if (!placa)     { mostrarMensaje(form.closest('.bloque-formulario'), 'La placa es requerida.', true); return; }
+    if (!idPersona) { mostrarMensaje(form.closest('.bloque-formulario'), 'Seleccione el visitante.', true); return; }
+
+    const r = await api({
+        accion: 'insertar_vehiculo',
+        placa,
+        descripcion:     desc,
+        id_persona:      idPersona,
+        id_estado:       idEstado,
+        id_tipo_espacio: 1,
+    });
+    if (r.error) {
+        mostrarMensaje(form.closest('.bloque-formulario'), 'Error: ' + r.mensaje, true);
+    } else {
+        mostrarMensaje(form.closest('.bloque-formulario'), 'Vehículo de visita registrado.');
+        form.reset();
+        cargarVehiculosVisitas();
     }
 }
 
@@ -333,11 +404,11 @@ async function cargarEventos() {
                 <td>${ev.FECHA_EVENTO}</td>
                 <td>${estadoBadge(ev.NOMBRE_ESTADO)}</td>
                 <td class="acciones-celda">
-                    <button class="btn-acc btn-prog"    onclick="cambiarEstadoEvento(${ev.ID_EVENTO},12)" title="Programado">📋 Prog.</button>
-                    <button class="btn-acc btn-proceso" onclick="cambiarEstadoEvento(${ev.ID_EVENTO},13)" title="En Proceso">⚙ Proceso</button>
+                    <button class="btn-acc btn-prog"     onclick="cambiarEstadoEvento(${ev.ID_EVENTO},12)" title="Programado">📋 Prog.</button>
+                    <button class="btn-acc btn-proceso"  onclick="cambiarEstadoEvento(${ev.ID_EVENTO},13)" title="En Proceso">⚙ Proceso</button>
                     <button class="btn-acc btn-resuelto" onclick="cambiarEstadoEvento(${ev.ID_EVENTO},14)" title="Resuelto">✓ Resuelto</button>
-                    <button class="btn-acc btn-final"   onclick="cambiarEstadoEvento(${ev.ID_EVENTO},17)" title="Finalizado">⬛ Final</button>
-                    <button class="btn-acc btn-editar"  onclick="editarEvento(${ev.ID_EVENTO},'${(ev.DESCR_EVENTO||'').replace(/'/g,"\\'")}',${ev.ID_TIPO_EVENTO??1},'${ev.FECHA_EVENTO??''}',${ev.ID_ESTADO??1})">✎ Editar</button>
+                    <button class="btn-acc btn-final"    onclick="cambiarEstadoEvento(${ev.ID_EVENTO},17)" title="Finalizado">⬛ Final</button>
+                    <button class="btn-acc btn-editar"   onclick="editarEvento(${ev.ID_EVENTO},'${(ev.DESCR_EVENTO||'').replace(/'/g,"\\'")}',${ev.ID_TIPO_EVENTO??1},'${ev.FECHA_EVENTO??''}',${ev.ID_ESTADO??1})">✎ Editar</button>
                 </td>
             </tr>`
         ).join('') || '<tr><td colspan="5">Sin eventos</td></tr>';
@@ -353,7 +424,7 @@ async function cambiarEstadoEvento(id, estado) {
 }
 
 function editarEvento(id, descr, idTipoEvento, fechaEvento, idEstado) {
-    const form   = document.querySelector('#eventos .bloque-formulario form');
+    const form   = document.getElementById('form-evento');
     if (!form) return;
     const inputs = form.querySelectorAll('input, select, textarea');
     inputs[0].value = descr;
@@ -369,19 +440,19 @@ function editarEvento(id, descr, idTipoEvento, fechaEvento, idEstado) {
 
 async function guardarEvento(e) {
     e.preventDefault();
-    const form   = document.querySelector('#eventos .bloque-formulario form');
+    const form   = document.getElementById('form-evento');
     const inputs = form.querySelectorAll('input, select, textarea');
     const editId = form.dataset.editId;
-
-    if (String(inputs[3]?.value) === '2') {
-        mostrarMensaje(form.closest('.bloque-formulario'), 'Guardias no pueden poner estado Inactivo.', true); return;
-    }
 
     if (editId) {
         const estado = parseInt(inputs[3]?.value ?? 0);
         if (!estado) { mostrarMensaje(form.closest('.bloque-formulario'), 'Seleccione un estado.', true); return; }
+        if (![12, 13, 14, 17].includes(estado)) {
+            mostrarMensaje(form.closest('.bloque-formulario'), 'Solo puede usar: Programado, En Proceso, Resuelto o Finalizado.', true); return;
+        }
         const r = await api({ accion:'actualizar_estado_evento', id:editId, estado });
         if (r.error) { mostrarMensaje(form.closest('.bloque-formulario'), 'Error: ' + r.mensaje, true); return; }
+        mostrarMensaje(form.closest('.bloque-formulario'), 'Estado actualizado.');
         cancelarEdicionEvento();
         cargarEventos();
         return;
@@ -395,8 +466,8 @@ async function guardarEvento(e) {
         id_estado:       inputs[3].value,
         id_tipo_espacio: 1,
     };
-    if (!data.descr_evento)    { mostrarMensaje(form.closest('.bloque-formulario'), 'La descripción es requerida.', true); return; }
-    if (!data.id_tipo_evento)  { mostrarMensaje(form.closest('.bloque-formulario'), 'Seleccione el tipo de evento.', true); return; }
+    if (!data.descr_evento)   { mostrarMensaje(form.closest('.bloque-formulario'), 'La descripción es requerida.', true); return; }
+    if (!data.id_tipo_evento) { mostrarMensaje(form.closest('.bloque-formulario'), 'Seleccione el tipo de evento.', true); return; }
 
     const r = await api(data);
     if (r.error) {
@@ -412,7 +483,7 @@ async function guardarEvento(e) {
 }
 
 function cancelarEdicionEvento() {
-    const form = document.querySelector('#eventos .bloque-formulario form');
+    const form = document.getElementById('form-evento');
     if (!form) return;
     form.reset(); delete form.dataset.editId;
     resetFormTitulo(form, 'Registrar Evento');
@@ -473,7 +544,7 @@ async function cargarEspacios() {
 }
 
 function editarEspacio(id, nombre, descr, idEstado) {
-    const form = document.querySelector('#espacios .bloque-formulario form');
+    const form = document.getElementById('form-espacio');
     if (!form) return;
     const inputs = form.querySelectorAll('input, select, textarea');
     inputs[0].value = nombre;
@@ -495,7 +566,7 @@ async function eliminarEspacio(id) {
 
 async function guardarEspacio(e) {
     e.preventDefault();
-    const form   = document.querySelector('#espacios .bloque-formulario form');
+    const form   = document.getElementById('form-espacio');
     const inputs = form.querySelectorAll('input, select, textarea');
     const editId = form.dataset.editId;
     const data   = {
@@ -532,18 +603,24 @@ function mostrarCancelarEdicion(form) {
         btn.className = 'btn-limpiar btn-cancelar-edicion';
         btn.textContent = '✕ Cancelar edición';
         btn.addEventListener('click', () => {
-            form.reset(); delete form.dataset.editId; delete form.dataset.editPlaca;
-            const h3 = form.closest('.bloque-formulario')?.querySelector('h3');
+            form.reset();
+            delete form.dataset.editId;
+            delete form.dataset.editPlaca;
             const sec = form.closest('.seccion');
+            const h3  = form.closest('.bloque-formulario')?.querySelector('h3');
             if (h3 && sec) {
                 const map = {
-                    visitantes:'Registrar Visitante',paquetes:'Registrar Paquete',
-                    vehiculos:'Registrar Vehículo',eventos:'Registrar Evento',espacios:'Registrar Espacio'
+                    visitantes: 'Registrar Visitante',
+                    paquetes:   'Registrar Paquete',
+                    eventos:    'Registrar Evento',
+                    espacios:   'Registrar Espacio',
                 };
                 h3.textContent = map[sec.id] ?? 'Registrar';
             }
-            const inp = form.querySelector('input[type="text"]');
-            if (inp) inp.readOnly = false;
+            if (form.id === 'form-vehiculo-residente') resetFormTitulo(form, 'Registrar Vehículo de Residente');
+            if (form.id === 'form-vehiculo-visita')    resetFormTitulo(form, 'Registrar Vehículo de Visitante');
+            const firstInput = form.querySelector('input[type="text"]');
+            if (firstInput) firstInput.readOnly = false;
             const submitBtn = form.querySelector('button[type="submit"]');
             if (submitBtn) submitBtn.textContent = 'Guardar';
             ocultarCancelarEdicion(form);
@@ -560,12 +637,13 @@ function ocultarCancelarEdicion(form) {
 
 async function cargarSelectsGuardia() {
     try {
-        const [residencias, roles, estados, tiposEvento, personas] = await Promise.all([
+        const [residencias, roles, estados, tiposEvento, personas, residentes] = await Promise.all([
             apiGet('listar_residencias'),
             apiGet('listar_roles'),
             apiGet('listar_estados_guardia'),
             apiGet('listar_tipos_evento'),
             apiGet('listar_personas'),
+            apiGet('listar_residentes'),
         ]);
 
         const visRes = document.querySelector('#visitantes .bloque-formulario select:nth-of-type(1)');
@@ -590,15 +668,20 @@ async function cargarSelectsGuardia() {
         const paqEst = document.querySelector('#paquetes .bloque-formulario select:nth-of-type(3)');
         if (paqEst) llenarSelect(paqEst, estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
 
-        const vehPer = document.querySelector('#vehiculos .bloque-formulario select:nth-of-type(1)');
-        if (vehPer) llenarSelect(vehPer, personas, 'ID_PERSONA', 'NOMBRE_COMPLETO');
-        const vehEst = document.querySelector('#vehiculos .bloque-formulario select:nth-of-type(2)');
-        if (vehEst) llenarSelect(vehEst, estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
+        const selVehResPer = document.getElementById('sel-veh-res-persona');
+        if (selVehResPer) llenarSelect(selVehResPer, personas, 'ID_PERSONA', 'NOMBRE_COMPLETO');
+        const selVehResEst = document.getElementById('sel-veh-res-estado');
+        if (selVehResEst) llenarSelect(selVehResEst, estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
+
+        const selVehVisPer = document.getElementById('sel-veh-vis-persona');
+        if (selVehVisPer) llenarSelect(selVehVisPer, personas, 'ID_PERSONA', 'NOMBRE_COMPLETO');
+        const selVehVisEst = document.getElementById('sel-veh-vis-estado');
+        if (selVehVisEst) llenarSelect(selVehVisEst, estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
 
         const evTipo = document.querySelector('#eventos .bloque-formulario select:nth-of-type(1)');
         if (evTipo) llenarSelect(evTipo, tiposEvento, 'ID_TIPO_EVENTO', 'TIPO_EVENTO');
         const evEst  = document.querySelector('#eventos .bloque-formulario select:nth-of-type(2)');
-        if (evEst)  llenarSelect(evEst,  estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
+        if (evEst)  llenarSelect(evEst, estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
 
         const espEst = document.querySelector('#espacios .bloque-formulario select');
         if (espEst) llenarSelect(espEst, estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
@@ -619,19 +702,31 @@ function inyectarMensajes() {
 
 function asignarFormularios() {
     const mapa = {
-        '#visitantes .bloque-formulario form': guardarVisita,
-        '#paquetes   .bloque-formulario form': guardarPaquete,
-        '#vehiculos  .bloque-formulario form': guardarVehiculo,
-        '#eventos    .bloque-formulario form': guardarEvento,
-        '#espacios   .bloque-formulario form': guardarEspacio,
+        'form-visitante':          guardarVisita,
+        'form-paquete':            guardarPaquete,
+        'form-vehiculo-residente': guardarVehiculoResidente,
+        'form-vehiculo-visita':    guardarVehiculoVisita,
+        'form-evento':             guardarEvento,
+        'form-espacio':            guardarEspacio,
     };
-    for (const [sel, fn] of Object.entries(mapa)) {
-        const btn = document.querySelector(`${sel} button[type="submit"]`);
-        if (btn) btn.closest('form').addEventListener('submit', fn);
+    for (const [id, fn] of Object.entries(mapa)) {
+        const form = document.getElementById(id);
+        if (form) form.addEventListener('submit', fn);
     }
     document.querySelectorAll('.btn-limpiar:not(.btn-cancelar-edicion)').forEach(btn =>
-        btn.addEventListener('click', () => btn.closest('form').reset())
+        btn.addEventListener('click', () => btn.closest('form')?.reset())
     );
+}
+
+function iniciarAutoRefresh() {
+    setInterval(() => {
+        cargarResumenGuardia();
+        cargarVisitantes();
+        cargarPaquetes();
+        cargarVehiculosResidentes();
+        cargarVehiculosVisitas();
+        cargarEventos();
+    }, 20000);
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -643,10 +738,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         cargarTurnos(),
         cargarVisitantes(),
         cargarPaquetes(),
-        cargarVehiculos(),
+        cargarVehiculosResidentes(),
+        cargarVehiculosVisitas(),
         cargarEventos(),
         cargarResidentes(),
         cargarResidencias(),
         cargarEspacios(),
     ]);
+    iniciarAutoRefresh();
 });

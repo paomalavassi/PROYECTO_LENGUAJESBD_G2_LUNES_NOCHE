@@ -33,23 +33,23 @@
                     <li class="nav-item"><a class="nav-link" href="#" onclick="mostrarSeccion('residentes')">Residentes</a></li>
                     <li class="nav-item"><a class="nav-link" href="#" onclick="mostrarSeccion('residencias')">Residencias</a></li>
                 </ul>
-                <a href="index.html" class="nav-link" style="color:#f0a0a0;">Cerrar sesión</a>
+                <a href="index.html" class="nav-link" style="color:#f0a0a0;">Cerrar sesion</a>
             </div>
         </div>
     </nav>
 
     <main>
-|
+
         <section id="inicio" class="seccion activa">
             <h2>Bienvenido, Guardia</h2>
-            <p>Resumen del día de hoy</p>
+            <p>Resumen del dia de hoy</p>
             <div class="resumen-inicio">
-                <div class="tarjeta-resumen"><h3>--</h3><p>Visitantes hoy</p></div>
+                <div class="tarjeta-resumen"><h3>--</h3><p>Guardias activos</p></div>
                 <div class="tarjeta-resumen"><h3>--</h3><p>Paquetes pendientes</p></div>
                 <div class="tarjeta-resumen"><h3>--</h3><p>Eventos registrados</p></div>
                 <div class="tarjeta-resumen"><h3>--</h3><p>Vehículos registrados</p></div>
             </div>
-            <h3>Últimas visitas del día</h3>
+            <h3>Ultimas visitas del dia</h3>
             <table>
                 <thead><tr><th>Visitante</th><th>Residencia</th><th>Fecha ingreso</th><th>Estado</th></tr></thead>
                 <tbody></tbody>
@@ -80,7 +80,7 @@
                 </div>
                 <div class="bloque-formulario">
                     <h3>Registrar Visitante</h3>
-                    <form>
+                    <form id="form-visitante">
                         <label>Nombre completo</label>
                         <input type="text" placeholder="Nombre del visitante">
 
@@ -122,7 +122,7 @@
                 </div>
                 <div class="bloque-formulario">
                     <h3>Registrar Paquete</h3>
-                    <form>
+                    <form id="form-paquete">
                         <label>Persona que recibe</label>
                         <select><option value="">-- Seleccione --</option></select>
                         <label>Residencia destino</label>
@@ -140,36 +140,88 @@
             </div>
         </section>
 
+        <!-- ═══════════════════════════════════════════════════════
+             VEHÍCULOS — dos sub-tabs: Residentes | Visitas
+             ═══════════════════════════════════════════════════════ -->
         <section id="vehiculos" class="seccion">
-            <h2>Vehículos</h2>
-            <div class="contenedor-principal">
-                <div class="bloque-tabla">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Placa</th><th>Descripción</th><th>Residente</th>
-                                <th>Estado</th><th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
+            <h2>Vehiculos</h2>
+
+            <!-- Tabs -->
+            <div class="tabs-seccion">
+                <button class="tab-btn activo" onclick="cambiarTabVehiculos('residentes')">🏠 Vehiculos de Residentes</button>
+                <button class="tab-btn"        onclick="cambiarTabVehiculos('visitas')">👤 Vehiculos de Visitas</button>
+            </div>
+
+            <!-- TAB: Residentes -->
+            <div id="tab-veh-residentes" class="tab-contenido activo">
+                <div class="contenedor-principal">
+                    <div class="bloque-tabla">
+                        <table id="tabla-veh-residentes">
+                            <thead>
+                                <tr>
+                                    <th>Placa</th><th>Descripcion</th><th>Residente</th>
+                                    <th>Estado</th><th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div class="bloque-formulario">
+                        <h3>Registrar Vehiculo de Residente</h3>
+                        <form id="form-vehiculo-residente">
+                            <label>Placa</label>
+                            <input type="text" placeholder="Ej: ABC-123">
+
+                            <label>Descripcion</label>
+                            <input type="text" placeholder="Ej: Toyota Corolla gris">
+
+                            <label>Residente dueno</label>
+                            <select id="sel-veh-res-persona"><option value="">-- Seleccione --</option></select>
+
+                            <label>Estado</label>
+                            <select id="sel-veh-res-estado"><option value="">-- Seleccione --</option></select>
+
+                            <button type="submit">Guardar</button>
+                            <button type="button" class="btn-limpiar">Limpiar</button>
+                        </form>
+                    </div>
                 </div>
-                <div class="bloque-formulario">
-                    <h3>Registrar Vehículo</h3>
-                    <form>
-                        <label>Placa</label>
-                        <input type="text" placeholder="Ej: ABC-123">
+            </div>
 
-                        <label>Descripción</label>
-                        <input type="text" placeholder="Ej: Toyota Corolla gris">
+            <!-- TAB: Visitas -->
+            <div id="tab-veh-visitas" class="tab-contenido">
+                <p class="nota-seccion">Registre aqui los vehiculos de visitantes temporales.</p>
+                <div class="contenedor-principal">
+                    <div class="bloque-tabla">
+                        <table id="tabla-veh-visitas">
+                            <thead>
+                                <tr>
+                                    <th>Placa</th><th>Descripcion</th><th>Visitante</th>
+                                    <th>Estado</th><th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div class="bloque-formulario">
+                        <h3>Registrar Vehiculo de Visitante</h3>
+                        <form id="form-vehiculo-visita">
+                            <label>Placa</label>
+                            <input type="text" placeholder="Ej: XYZ-789">
 
-                        <label>Residente dueño</label>
-                        <select><option value="">-- Seleccione --</option></select>
-                        <label>Estado</label>
-                        <select><option value="">-- Seleccione --</option></select>
-                        <button type="submit">Guardar</button>
-                        <button type="button" class="btn-limpiar">Limpiar</button>
-                    </form>
+                            <label>Descripcion del vehiculo</label>
+                            <input type="text" placeholder="Ej: Honda Civic rojo">
+
+                            <label>Visitante (persona)</label>
+                            <select id="sel-veh-vis-persona"><option value="">-- Seleccione --</option></select>
+
+                            <label>Estado</label>
+                            <select id="sel-veh-vis-estado"><option value="">-- Seleccione --</option></select>
+
+                            <button type="submit">Guardar</button>
+                            <button type="button" class="btn-limpiar">Limpiar</button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </section>
@@ -181,7 +233,7 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Descripción</th><th>Tipo</th><th>Fecha</th>
+                                <th>Descripcion</th><th>Tipo</th><th>Fecha</th>
                                 <th>Estado</th><th>Acciones</th>
                             </tr>
                         </thead>
@@ -190,32 +242,35 @@
                 </div>
                 <div class="bloque-formulario">
                     <h3>Registrar Evento</h3>
-                    <form>
-                        <label>Descripción</label>
+                    <form id="form-evento">
+                        <label>Descripcion</label>
                         <textarea placeholder="Describa el evento o incidente"></textarea>
 
                         <label>Tipo de evento</label>
                         <select><option value="">-- Seleccione --</option></select>
+
                         <label>Fecha del evento</label>
                         <input type="text" placeholder="Ej: 2026-03-05">
 
                         <label>Estado</label>
                         <select><option value="">-- Seleccione --</option></select>
+
                         <button type="submit">Guardar</button>
                         <button type="button" class="btn-limpiar">Limpiar</button>
                     </form>
                 </div>
             </div>
         </section>
+
         <section id="espacios" class="seccion">
             <h2>Espacios del Condominio</h2>
-            <p class="nota-seccion">Gestión de los tipos de espacios: parqueos, salones, áreas comunes, etc.</p>
+            <p class="nota-seccion">Gestion de los tipos de espacios: parqueos, salones, areas comunes, etc.</p>
             <div class="contenedor-principal">
                 <div class="bloque-tabla">
                     <table>
                         <thead>
                             <tr>
-                                <th>ID</th><th>Nombre</th><th>Descripción</th>
+                                <th>ID</th><th>Nombre</th><th>Descripcion</th>
                                 <th>Estado</th><th>Acciones</th>
                             </tr>
                         </thead>
@@ -224,10 +279,10 @@
                 </div>
                 <div class="bloque-formulario">
                     <h3>Registrar Espacio</h3>
-                    <form>
+                    <form id="form-espacio">
                         <label>Nombre del espacio</label>
                         <input type="text" placeholder="Ej: Parqueo Residencial">
-                        <label>Descripción</label>
+                        <label>Descripcion</label>
                         <textarea placeholder="Ej: Espacio asignado a residencias"></textarea>
                         <label>Estado</label>
                         <select><option value="">-- Seleccione --</option></select>
@@ -245,7 +300,7 @@
                 <thead>
                     <tr>
                         <th>Nombre</th><th>Apellido Paterno</th><th>Apellido Materno</th>
-                        <th>Teléfono</th><th>Residencia</th><th>Estado</th>
+                        <th>Telefono</th><th>Residencia</th><th>Estado</th>
                     </tr>
                 </thead>
                 <tbody></tbody>

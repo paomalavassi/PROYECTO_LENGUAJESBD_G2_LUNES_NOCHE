@@ -1,5 +1,9 @@
 <?php
 
+ini_set('display_errors', 0);
+error_reporting(0);
+ob_start();
+
 header('Content-Type: application/json; charset=UTF-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST');
@@ -54,6 +58,11 @@ function fetchAll($conn, string $sql, array $binds = []): array {
     return $rows;
 }
 
+function jsonOut($data): void {
+    ob_clean();
+    jsonOut($data, JSON_UNESCAPED_UNICODE);
+}
+
 function execUpdate($conn, string $sql, array $binds): array {
     $stmt = oci_parse($conn, $sql);
     if (!$stmt) { $e = oci_error($conn); return ['error'=>true,'mensaje'=>$e['message']]; }
@@ -75,7 +84,7 @@ switch ($accion) {
         $rol     = trim($_POST['rol']     ?? '');
 
         if (!$usuario || !$clave) {
-            echo json_encode(['error' => true, 'mensaje' => 'Ingrese usuario y contraseña.']);
+            jsonOut(['error' => true, 'mensaje' => 'Ingrese usuario y contraseña.']);
             break;
         }
 
@@ -88,7 +97,7 @@ switch ($accion) {
         );
 
         if (empty($rows)) {
-            echo json_encode(['error' => true, 'mensaje' => 'Usuario o contraseña incorrectos.']);
+            jsonOut(['error' => true, 'mensaje' => 'Usuario o contraseña incorrectos.']);
             break;
         }
 
@@ -96,15 +105,15 @@ switch ($accion) {
         $rolNombre = strtoupper($persona['ROL']);
 
         if ($rol === 'guardia' && strpos($rolNombre, 'GUARD') === false) {
-            echo json_encode(['error' => true, 'mensaje' => 'Este usuario no tiene acceso como Guardia.']);
+            jsonOut(['error' => true, 'mensaje' => 'Este usuario no tiene acceso como Guardia.']);
             break;
         }
         if ($rol === 'admin' && strpos($rolNombre, 'ADMIN') === false) {
-            echo json_encode(['error' => true, 'mensaje' => 'Este usuario no tiene acceso como Administrador.']);
+            jsonOut(['error' => true, 'mensaje' => 'Este usuario no tiene acceso como Administrador.']);
             break;
         }
 
-        echo json_encode([
+        jsonOut([
             'ok'         => true,
             'id_persona' => $persona['ID_PERSONA'],
             'nombre'     => $persona['NOMBRE'] . ' ' . $persona['APELLIDO_PATERNO'],
@@ -122,7 +131,7 @@ switch ($accion) {
              FROM   FIDE_LISTAR_GUARDIAS_V p
              LEFT JOIN FIDE_ESTADOS_TB e ON e.ID_ESTADO = p.ID_ESTADO"
         );
-        echo json_encode($rows);
+        jsonOut($rows);
         break;
 
     case 'listar_residentes':
@@ -133,7 +142,7 @@ switch ($accion) {
                     p.ID_RESIDENCIA, p.ID_ESTADO, p.NOMBRE_ESTADO
              FROM   FIDE_LISTAR_RESIDENTES_V p"
         );
-        echo json_encode($rows);
+        jsonOut($rows);
         break;
 
     case 'listar_personas':
@@ -141,7 +150,7 @@ switch ($accion) {
             "SELECT ID_PERSONA, NOMBRE_COMPLETO, ID_ROL
              FROM   FIDE_LISTAR_PERSONAS_V"
         );
-        echo json_encode($rows);
+        jsonOut($rows);
         break;
 
     case 'listar_trabajadores':
@@ -149,7 +158,7 @@ switch ($accion) {
             "SELECT ID_PERSONA, NOMBRE_COMPLETO
              FROM   FIDE_LISTAR_TRABAJADORES_V"
         );
-        echo json_encode($rows);
+        jsonOut($rows);
         break;
 
     case 'listar_residencias':
@@ -159,7 +168,7 @@ switch ($accion) {
              FROM   FIDE_LISTAR_RESIDENCIAS_VM
              ORDER  BY ID_RESIDENCIA"
         );
-        echo json_encode($rows);
+        jsonOut($rows);
         break;
 
     case 'listar_visitas':
@@ -169,7 +178,7 @@ switch ($accion) {
                     ID_ESTADO, NOMBRE_ESTADO
              FROM   FIDE_LISTAR_VISITAS_V"
         );
-        echo json_encode($rows);
+        jsonOut($rows);
         break;
 
     case 'listar_paquetes':
@@ -178,7 +187,7 @@ switch ($accion) {
                     FECHA_INGRESO, FECHA_SALIDA, ID_ESTADO, NOMBRE_ESTADO
              FROM   FIDE_LISTAR_PAQUETES_V"
         );
-        echo json_encode($rows);
+        jsonOut($rows);
         break;
 
     case 'listar_facturas':
@@ -187,7 +196,7 @@ switch ($accion) {
                     PERSONA, TIPO_PAGO, FORMA_PAGO, NOMBRE_ESTADO
              FROM   FIDE_LISTAR_FACTURAS_V"
         );
-        echo json_encode($rows);
+        jsonOut($rows);
         break;
 
     case 'listar_servicios':
@@ -197,7 +206,7 @@ switch ($accion) {
                     ID_ESTADO, NOMBRE_ESTADO, PERSONAS
              FROM   FIDE_LISTAR_SERVICIOS_V"
         );
-        echo json_encode($rows);
+        jsonOut($rows);
         break;
 
     case 'listar_eventos':
@@ -207,7 +216,7 @@ switch ($accion) {
                     ID_ESTADO, NOMBRE_ESTADO
              FROM   FIDE_LISTAR_EVENTOS_V"
         );
-        echo json_encode($rows);
+        jsonOut($rows);
         break;
 
     case 'listar_vehiculos':
@@ -216,7 +225,32 @@ switch ($accion) {
                     ID_PERSONA, ID_TIPO_ESPACIO, ID_ESTADO, NOMBRE_ESTADO
              FROM   FIDE_LISTAR_VEHICULOS_V"
         );
-        echo json_encode($rows);
+        jsonOut($rows);
+        break;
+
+    case 'listar_vehiculos_residentes':
+        $rows = fetchAll($conn,
+            "SELECT v.PLACA, v.DESCRIPCION, v.RESIDENTE,
+                    v.ID_PERSONA, v.ID_TIPO_ESPACIO, v.ID_ESTADO, v.NOMBRE_ESTADO
+             FROM   FIDE_LISTAR_VEHICULOS_V v
+             JOIN   FIDE_PERSONAS_TB p ON p.ID_PERSONA = v.ID_PERSONA
+             JOIN   FIDE_ROLES_TB    r ON r.ID_ROL     = p.ID_ROL
+             WHERE  UPPER(r.ROL) LIKE '%RESID%'"
+        );
+        jsonOut($rows);
+        break;
+
+    case 'listar_vehiculos_visitas':
+        $rows = fetchAll($conn,
+            "SELECT v.PLACA, v.DESCRIPCION,
+                    p.NOMBRE || ' ' || p.APELLIDO_PATERNO AS VISITANTE,
+                    v.ID_PERSONA, v.ID_TIPO_ESPACIO, v.ID_ESTADO, v.NOMBRE_ESTADO
+             FROM   FIDE_LISTAR_VEHICULOS_V v
+             JOIN   FIDE_PERSONAS_TB p ON p.ID_PERSONA = v.ID_PERSONA
+             JOIN   FIDE_ROLES_TB    r ON r.ID_ROL     = p.ID_ROL
+             WHERE  UPPER(r.ROL) LIKE '%VISIT%'"
+        );
+        jsonOut($rows);
         break;
 
     case 'listar_espacios':
@@ -225,7 +259,7 @@ switch ($accion) {
                     ID_ESTADO, NOMBRE_ESTADO
              FROM   FIDE_LISTAR_ESPACIOS_V"
         );
-        echo json_encode($rows);
+        jsonOut($rows);
         break;
 
     case 'insertar_espacio':
@@ -237,7 +271,7 @@ switch ($accion) {
             "BEGIN $pkg.FIDE_TIPOS_ESPACIOS_INSERTAR_SP(:p1,:p2,:p3,:p4); END;",
             [':p1'=>$id,':p2'=>$nombre,':p3'=>$descr,':p4'=>$idEstado]
         );
-        echo json_encode(($r['error'] ?? false) ? $r : ['ok'=>true,'id'=>$id]);
+        jsonOut(($r['error'] ?? false) ? $r : ['ok'=>true,'id'=>$id]);
         break;
 
     case 'actualizar_espacio':
@@ -249,36 +283,41 @@ switch ($accion) {
             "BEGIN $pkg.FIDE_TIPOS_ESPACIOS_ACTUALIZAR_SP(:p1,:p2,:p3,:p4); END;",
             [':p1'=>$id,':p2'=>$nombre,':p3'=>$descr,':p4'=>$idEstado]
         );
-        echo json_encode($r);
+        jsonOut($r);
         break;
 
     case 'eliminar_espacio':
         $id = (int)($_REQUEST['id'] ?? 0);
         $r  = execProc($conn, "BEGIN $pkg.FIDE_TIPOS_ESPACIOS_ELIMINAR_SP(:p1); END;", [':p1'=>$id]);
-        echo json_encode($r);
+        jsonOut($r);
         break;
 
     case 'actualizar_estado_visita':
         $id          = (int)($_REQUEST['id']     ?? 0);
         $nuevoEstado = (int)($_REQUEST['estado'] ?? 0);
         if (!in_array($nuevoEstado, [4, 5, 6])) {
-            echo json_encode(['error'=>true,'mensaje'=>'Estado no permitido para guardia.']);
+            jsonOut(['error'=>true,'mensaje'=>'Estado no permitido para guardia.']);
             break;
         }
-        $sql = ($nuevoEstado === 5)
-            ? "UPDATE FIDE_VISITAS_TB SET ID_ESTADO=:est, FECHA_SALIDA=SYSDATE WHERE ID_VISITA=:id"
-            : "UPDATE FIDE_VISITAS_TB SET ID_ESTADO=:est                         WHERE ID_VISITA=:id";
-        echo json_encode(execUpdate($conn, $sql, [':est'=>$nuevoEstado,':id'=>$id]));
+  
+        if ($nuevoEstado === 4) {
+            $sql = "UPDATE FIDE_VISITAS_TB SET ID_ESTADO=:est, FECHA_SALIDA=NULL WHERE ID_VISITA=:id";
+        } elseif ($nuevoEstado === 5) {
+            $sql = "UPDATE FIDE_VISITAS_TB SET ID_ESTADO=:est, FECHA_SALIDA=SYSDATE WHERE ID_VISITA=:id";
+        } else {
+            $sql = "UPDATE FIDE_VISITAS_TB SET ID_ESTADO=:est WHERE ID_VISITA=:id";
+        }
+        jsonOut(execUpdate($conn, $sql, [':est'=>$nuevoEstado,':id'=>$id]));
         break;
 
     case 'actualizar_estado_vehiculo':
         $placa       = strtoupper(trim($_REQUEST['placa']  ?? ''));
         $nuevoEstado = (int)($_REQUEST['estado'] ?? 0);
         if (!in_array($nuevoEstado, [4, 5, 6])) {
-            echo json_encode(['error'=>true,'mensaje'=>'Estado no permitido para guardia.']);
+            jsonOut(['error'=>true,'mensaje'=>'Estado no permitido para guardia.']);
             break;
         }
-        echo json_encode(execUpdate($conn,
+        jsonOut(execUpdate($conn,
             "UPDATE FIDE_VEHICULOS_TB SET ID_ESTADO=:est WHERE PLACA=:placa",
             [':est'=>$nuevoEstado,':placa'=>$placa]
         ));
@@ -288,10 +327,10 @@ switch ($accion) {
         $id          = (int)($_REQUEST['id']     ?? 0);
         $nuevoEstado = (int)($_REQUEST['estado'] ?? 0);
         if (!in_array($nuevoEstado, [12, 13, 14, 17])) {
-            echo json_encode(['error'=>true,'mensaje'=>'Estado no permitido para guardia.']);
+            jsonOut(['error'=>true,'mensaje'=>'Estado no permitido para guardia.']);
             break;
         }
-        echo json_encode(execUpdate($conn,
+        jsonOut(execUpdate($conn,
             "UPDATE FIDE_EVENTOS_TB SET ID_ESTADO=:est WHERE ID_EVENTO=:id",
             [':est'=>$nuevoEstado,':id'=>$id]
         ));
@@ -299,7 +338,7 @@ switch ($accion) {
 
     case 'marcar_paquete_entregado':
         $id = (int)($_REQUEST['id'] ?? 0);
-        echo json_encode(execUpdate($conn,
+        jsonOut(execUpdate($conn,
             "UPDATE FIDE_PAQUETES_TB SET ID_ESTADO=16, FECHA_SALIDA=SYSDATE WHERE ID_PAQUETE=:id",
             [':id'=>$id]
         ));
@@ -319,40 +358,40 @@ switch ($accion) {
                 "SELECT GUARDIA, FECHA_TURNO AS FECHA, HORARIO, NOMBRE_ESTADO
                  FROM   FIDE_LISTAR_TURNOS_V"
             );
-        echo json_encode($rows);
+        jsonOut($rows);
         break;
 
     case 'listar_roles':
-        echo json_encode(fetchAll($conn, "SELECT ID_ROL, ROL FROM FIDE_LISTAR_ROLES_V"));
+        jsonOut(fetchAll($conn, "SELECT ID_ROL, ROL FROM FIDE_LISTAR_ROLES_V"));
         break;
 
     case 'listar_tipos_pago':
-        echo json_encode(fetchAll($conn, "SELECT ID_TIPO_PAGO, TIPO FROM FIDE_LISTAR_TIPOS_PAGO_V"));
+        jsonOut(fetchAll($conn, "SELECT ID_TIPO_PAGO, TIPO FROM FIDE_LISTAR_TIPOS_PAGO_V"));
         break;
 
     case 'listar_formas_pago':
-        echo json_encode(fetchAll($conn, "SELECT ID_FORMA_PAGO, FORMA FROM FIDE_LISTAR_FORMAS_PAGO_V"));
+        jsonOut(fetchAll($conn, "SELECT ID_FORMA_PAGO, FORMA FROM FIDE_LISTAR_FORMAS_PAGO_V"));
         break;
 
     case 'listar_tipos_servicio':
-        echo json_encode(fetchAll($conn, "SELECT ID_TIPO_SERVICIO, TIPO_SERVICIO FROM FIDE_LISTAR_TIPOS_SERVICIO_V"));
+        jsonOut(fetchAll($conn, "SELECT ID_TIPO_SERVICIO, TIPO_SERVICIO FROM FIDE_LISTAR_TIPOS_SERVICIO_V"));
         break;
 
     case 'listar_tipos_evento':
-        echo json_encode(fetchAll($conn, "SELECT ID_TIPO_EVENTO, TIPO_EVENTO FROM FIDE_LISTAR_TIPOS_EVENTO_V"));
+        jsonOut(fetchAll($conn, "SELECT ID_TIPO_EVENTO, TIPO_EVENTO FROM FIDE_LISTAR_TIPOS_EVENTO_V"));
         break;
 
     case 'listar_estados':
-        echo json_encode(fetchAll($conn, "SELECT ID_ESTADO, NOMBRE_ESTADO FROM FIDE_LISTAR_ESTADOS_V"));
+        jsonOut(fetchAll($conn, "SELECT ID_ESTADO, NOMBRE_ESTADO FROM FIDE_LISTAR_ESTADOS_V"));
         break;
 
     case 'listar_estados_guardia':
-        echo json_encode(fetchAll($conn, "SELECT ID_ESTADO, NOMBRE_ESTADO FROM FIDE_LISTAR_ESTADOS_GUARDIA_V"));
+        jsonOut(fetchAll($conn, "SELECT ID_ESTADO, NOMBRE_ESTADO FROM FIDE_LISTAR_ESTADOS_GUARDIA_V"));
         break;
 
     case 'resumen':
         $row = fetchAll($conn, "SELECT * FROM FIDE_RESUMEN_GENERAL_V");
-        echo json_encode([
+        jsonOut([
             'guardias'    => $row[0]['GUARDIAS']           ?? 0,
             'residentes'  => $row[0]['RESIDENTES']         ?? 0,
             'residencias' => $row[0]['RESIDENCIAS']        ?? 0,
@@ -367,7 +406,7 @@ switch ($accion) {
             "SELECT DESCR_EVENTO, TIPO_EVENTO, FECHA_EVENTO, NOMBRE_ESTADO
              FROM   FIDE_ULTIMOS_EVENTOS_V"
         );
-        echo json_encode($rows);
+        jsonOut($rows);
         break;
 
     case 'ultimas_visitas':
@@ -375,7 +414,7 @@ switch ($accion) {
             "SELECT VISITANTE, ID_RESIDENCIA, FECHA_INGRESO, NOMBRE_ESTADO
              FROM   FIDE_ULTIMAS_VISITAS_V"
         );
-        echo json_encode($rows);
+        jsonOut($rows);
         break;
 
     case 'insertar_guardia':
@@ -389,18 +428,18 @@ switch ($accion) {
         $idEstado   = (int)($_POST['id_estado']  ?? 1);
 
         if (!$usuario || !$contrasena) {
-            echo json_encode(['error'=>true,'mensaje'=>'El usuario y la contraseña son requeridos.']);
+            jsonOut(['error'=>true,'mensaje'=>'El usuario y la contraseña son requeridos.']);
             break;
         }
 
         $existe = fetchAll($conn, "SELECT 1 FROM FIDE_USUARIOS_PERSONAS_V WHERE USUARIO = :u", [':u'=>$usuario]);
         if (!empty($existe)) {
-            echo json_encode(['error'=>true,'mensaje'=>"El usuario '$usuario' ya está en uso."]);
+            jsonOut(['error'=>true,'mensaje'=>"El usuario '$usuario' ya está en uso."]);
             break;
         }
 
         $rolRow = fetchAll($conn, "SELECT ID_ROL FROM FIDE_ROLES_TB WHERE UPPER(ROL) LIKE '%GUARD%' AND ROWNUM=1");
-        if (empty($rolRow)) { echo json_encode(['error'=>true,'mensaje'=>'No existe rol guardia.']); break; }
+        if (empty($rolRow)) { jsonOut(['error'=>true,'mensaje'=>'No existe rol guardia.']); break; }
         $idRol      = (int)$rolRow[0]['ID_ROL'];
         $idPersona  = nextId('FIDE_PERSONAS_TB',  'ID_PERSONA',  $conn);
         $idTelefono = nextId('FIDE_TELEFONOS_TB', 'ID_TELEFONO', $conn);
@@ -411,7 +450,7 @@ switch ($accion) {
             "BEGIN $pkg.FIDE_PERSONAS_INSERTAR_SP(:p1,:p2,:p3,:p4,TO_DATE(:p5,'YYYY-MM-DD'),:p6,:p7); END;",
             [':p1'=>$idPersona,':p2'=>$nombre,':p3'=>$pat,':p4'=>$mat,':p5'=>$hoy,':p6'=>$idRol,':p7'=>$idEstado]
         );
-        if ($r1['error'] ?? false) { echo json_encode($r1); break; }
+        if ($r1['error'] ?? false) { jsonOut($r1); break; }
 
         execUpdate($conn,
             "UPDATE FIDE_PERSONAS_TB SET USUARIO = :u, CONTRASENA = :c WHERE ID_PERSONA = :id",
@@ -421,7 +460,7 @@ switch ($accion) {
         if ($tel)    execProc($conn, "BEGIN $pkg.FIDE_TELEFONOS_INSERTAR_SP(:p1,:p2,:p3,:p4); END;", [':p1'=>$idTelefono,':p2'=>$idPersona,':p3'=>$tel,':p4'=>1]);
         if ($correo) execProc($conn, "BEGIN $pkg.FIDE_CORREOS_INSERTAR_SP(:p1,:p2,:p3,:p4); END;",   [':p1'=>$idCorreo,':p2'=>$idPersona,':p3'=>$correo,':p4'=>1]);
 
-        echo json_encode(['ok'=>true,'id'=>$idPersona]);
+        jsonOut(['ok'=>true,'id'=>$idPersona]);
         break;
 
     case 'insertar_residente':
@@ -434,7 +473,7 @@ switch ($accion) {
         $idEstado     = (int)($_POST['id_estado']     ?? 1);
 
         $rolRow = fetchAll($conn, "SELECT ID_ROL FROM FIDE_ROLES_TB WHERE UPPER(ROL) LIKE '%RESID%' AND ROWNUM=1");
-        if (empty($rolRow)) { echo json_encode(['error'=>true,'mensaje'=>'No existe rol residente.']); break; }
+        if (empty($rolRow)) { jsonOut(['error'=>true,'mensaje'=>'No existe rol residente.']); break; }
         $idRol      = (int)$rolRow[0]['ID_ROL'];
         $idPersona  = nextId('FIDE_PERSONAS_TB',  'ID_PERSONA',  $conn);
         $idTelefono = nextId('FIDE_TELEFONOS_TB', 'ID_TELEFONO', $conn);
@@ -445,13 +484,13 @@ switch ($accion) {
             "BEGIN $pkg.FIDE_PERSONAS_INSERTAR_SP(:p1,:p2,:p3,:p4,TO_DATE(:p5,'YYYY-MM-DD'),:p6,:p7); END;",
             [':p1'=>$idPersona,':p2'=>$nombre,':p3'=>$pat,':p4'=>$mat,':p5'=>$hoy,':p6'=>$idRol,':p7'=>$idEstado]
         );
-        if ($r1['error'] ?? false) { echo json_encode($r1); break; }
+        if ($r1['error'] ?? false) { jsonOut($r1); break; }
 
         if ($tel)          execProc($conn, "BEGIN $pkg.FIDE_TELEFONOS_INSERTAR_SP(:p1,:p2,:p3,:p4); END;", [':p1'=>$idTelefono,':p2'=>$idPersona,':p3'=>$tel,':p4'=>1]);
         if ($correo)       execProc($conn, "BEGIN $pkg.FIDE_CORREOS_INSERTAR_SP(:p1,:p2,:p3,:p4); END;",   [':p1'=>$idCorreo,':p2'=>$idPersona,':p3'=>$correo,':p4'=>1]);
         if ($idResidencia) execProc($conn, "BEGIN $pkg.FIDE_RESIDENTES_INSERTAR_SP(:p1,:p2,:p3); END;",    [':p1'=>$idPersona,':p2'=>$idResidencia,':p3'=>$idEstado]);
 
-        echo json_encode(['ok'=>true,'id'=>$idPersona]);
+        jsonOut(['ok'=>true,'id'=>$idPersona]);
         break;
 
     case 'insertar_residencia':
@@ -462,7 +501,7 @@ switch ($accion) {
         $id = nextId('FIDE_RESIDENCIAS_TB','ID_RESIDENCIA',$conn);
         $r  = execProc($conn, "BEGIN $pkg.FIDE_RESIDENCIAS_INSERTAR_SP(:p1,:p2,:p3,:p4,:p5); END;",
             [':p1'=>$id,':p2'=>$montoAlq,':p3'=>$montoMant,':p4'=>$idTipoPago,':p5'=>$idEstado]);
-        echo json_encode(($r['error'] ?? false) ? $r : ['ok'=>true,'id'=>$id]);
+        jsonOut(($r['error'] ?? false) ? $r : ['ok'=>true,'id'=>$id]);
         break;
 
     case 'insertar_visita':
@@ -495,7 +534,7 @@ switch ($accion) {
             $binds = [':p1'=>$id,':p2'=>$idPersona,':p3'=>$fechaIngreso,':p5'=>$idResidencia,':p6'=>$idRol,':p7'=>$idEstado];
         }
         $r = execProc($conn, $sql, $binds);
-        echo json_encode(($r['error'] ?? false) ? $r : ['ok'=>true,'id'=>$id]);
+        jsonOut(($r['error'] ?? false) ? $r : ['ok'=>true,'id'=>$id]);
         break;
 
     case 'insertar_paquete':
@@ -514,7 +553,7 @@ switch ($accion) {
             $binds = [':p1'=>$id,':p2'=>$idPersona,':p3'=>$idResidencia,':p4'=>$fechaIngreso,':p6'=>$idEstado];
         }
         $r = execProc($conn, $sql, $binds);
-        echo json_encode(($r['error'] ?? false) ? $r : ['ok'=>true,'id'=>$id]);
+        jsonOut(($r['error'] ?? false) ? $r : ['ok'=>true,'id'=>$id]);
         break;
 
     case 'insertar_factura':
@@ -530,7 +569,7 @@ switch ($accion) {
             "BEGIN $pkg.FIDE_FACTURAS_INSERTAR_SP(:p1,TO_DATE(:p2,'YYYY-MM-DD'),:p3,:p4,:p5,:p6,:p7); END;",
             [':p1'=>$id,':p2'=>$fechaFactura,':p3'=>$descr,':p4'=>$idTipoPago,':p5'=>$idFormaPago,':p6'=>$idPersona,':p7'=>$idEstado]
         );
-        echo json_encode(($r['error'] ?? false) ? $r : ['ok'=>true,'id'=>$id]);
+        jsonOut(($r['error'] ?? false) ? $r : ['ok'=>true,'id'=>$id]);
         break;
 
     case 'insertar_servicio':
@@ -549,10 +588,10 @@ switch ($accion) {
             $binds = [':p1'=>$id,':p2'=>$descr,':p4'=>$idTipoServicio,':p5'=>$idTipoEvento,':p6'=>$idEstado];
         }
         $r = execProc($conn, $sql, $binds);
-        if ($r['error'] ?? false) { echo json_encode($r); break; }
+        if ($r['error'] ?? false) { jsonOut($r); break; }
         if ($idPersonaServicio)
             execProc($conn,"BEGIN $pkg.FIDE_PERSONAS_SERVICIOS_INSERTAR_SP(:p1,:p2,:p3); END;",[':p1'=>$id,':p2'=>$idPersonaServicio,':p3'=>$idEstado]);
-        echo json_encode(['ok'=>true,'id'=>$id]);
+        jsonOut(['ok'=>true,'id'=>$id]);
         break;
 
     case 'insertar_evento':
@@ -567,7 +606,7 @@ switch ($accion) {
             "BEGIN $pkg.FIDE_EVENTOS_INSERTAR_SP(:p1,:p2,TO_DATE(:p3,'YYYY-MM-DD'),:p4,:p5,:p6); END;",
             [':p1'=>$id,':p2'=>$descr,':p3'=>$fechaEvento,':p4'=>$idTipoEvento,':p5'=>$idTipoEspacio,':p6'=>$idEstado]
         );
-        echo json_encode(($r['error'] ?? false) ? $r : ['ok'=>true,'id'=>$id]);
+        jsonOut(($r['error'] ?? false) ? $r : ['ok'=>true,'id'=>$id]);
         break;
 
     case 'insertar_vehiculo':
@@ -580,7 +619,7 @@ switch ($accion) {
             "BEGIN $pkg.FIDE_VEHICULOS_INSERTAR_SP(:p1,:p2,:p3,:p4,:p5); END;",
             [':p1'=>$placa,':p2'=>$descripcion,':p3'=>$idTipoEspacio,':p4'=>$idPersona,':p5'=>$idEstado]
         );
-        echo json_encode(($r['error'] ?? false) ? $r : ['ok'=>true]);
+        jsonOut(($r['error'] ?? false) ? $r : ['ok'=>true]);
         break;
 
     case 'actualizar_guardia':
@@ -595,7 +634,7 @@ switch ($accion) {
         $idEstado   = (int)($_POST['id_estado']       ?? 1);
 
         if (!$usuario) {
-            echo json_encode(['error'=>true,'mensaje'=>'El usuario no puede estar vacío.']);
+            jsonOut(['error'=>true,'mensaje'=>'El usuario no puede estar vacío.']);
             break;
         }
 
@@ -604,21 +643,21 @@ switch ($accion) {
             [':u'=>$usuario, ':id'=>$id]
         );
         if (!empty($existe)) {
-            echo json_encode(['error'=>true,'mensaje'=>"El usuario '$usuario' ya está en uso por otra persona."]);
+            jsonOut(['error'=>true,'mensaje'=>"El usuario '$usuario' ya está en uso por otra persona."]);
             break;
         }
 
         $cur = fetchAll($conn,
             "SELECT ID_ROL, TO_CHAR(FECHA_REGISTRO,'YYYY-MM-DD') AS FR FROM FIDE_PERSONAS_TB WHERE ID_PERSONA=:pid",
             [':pid'=>$id]);
-        if (empty($cur)) { echo json_encode(['error'=>true,'mensaje'=>'Persona no encontrada.']); break; }
+        if (empty($cur)) { jsonOut(['error'=>true,'mensaje'=>'Persona no encontrada.']); break; }
 
         $r = execProc($conn,
             "BEGIN $pkg.FIDE_PERSONAS_ACTUALIZAR_SP(:p1,:p2,:p3,:p4,TO_DATE(:p5,'YYYY-MM-DD'),:p6,:p7); END;",
             [':p1'=>$id,':p2'=>$nombre,':p3'=>$pat,':p4'=>$mat,
              ':p5'=>$cur[0]['FR'],':p6'=>$cur[0]['ID_ROL'],':p7'=>$idEstado]
         );
-        if ($r['error'] ?? false) { echo json_encode($r); break; }
+        if ($r['error'] ?? false) { jsonOut($r); break; }
 
         if ($contrasena) {
             execUpdate($conn,
@@ -642,7 +681,7 @@ switch ($accion) {
             if ($cRow) execProc($conn,"BEGIN $pkg.FIDE_CORREOS_ACTUALIZAR_SP(:p1,:p2,:p3,:p4); END;",[':p1'=>$cRow[0]['ID_CORREO'],':p2'=>$id,':p3'=>$correo,':p4'=>1]);
             else { $nId=nextId('FIDE_CORREOS_TB','ID_CORREO',$conn); execProc($conn,"BEGIN $pkg.FIDE_CORREOS_INSERTAR_SP(:p1,:p2,:p3,:p4); END;",[':p1'=>$nId,':p2'=>$id,':p3'=>$correo,':p4'=>1]); }
         }
-        echo json_encode(['ok'=>true]);
+        jsonOut(['ok'=>true]);
         break;
 
     case 'actualizar_residente':
@@ -658,14 +697,14 @@ switch ($accion) {
         $cur = fetchAll($conn,
             "SELECT ID_ROL, TO_CHAR(FECHA_REGISTRO,'YYYY-MM-DD') AS FR FROM FIDE_PERSONAS_TB WHERE ID_PERSONA=:pid",
             [':pid'=>$id]);
-        if (empty($cur)) { echo json_encode(['error'=>true,'mensaje'=>'Persona no encontrada.']); break; }
+        if (empty($cur)) { jsonOut(['error'=>true,'mensaje'=>'Persona no encontrada.']); break; }
 
         $r = execProc($conn,
             "BEGIN $pkg.FIDE_PERSONAS_ACTUALIZAR_SP(:p1,:p2,:p3,:p4,TO_DATE(:p5,'YYYY-MM-DD'),:p6,:p7); END;",
             [':p1'=>$id,':p2'=>$nombre,':p3'=>$pat,':p4'=>$mat,
              ':p5'=>$cur[0]['FR'],':p6'=>$cur[0]['ID_ROL'],':p7'=>$idEstado]
         );
-        if ($r['error'] ?? false) { echo json_encode($r); break; }
+        if ($r['error'] ?? false) { jsonOut($r); break; }
 
         if ($tel) {
             $tRow = fetchAll($conn,"SELECT ID_TELEFONO FROM FIDE_TELEFONOS_TB WHERE ID_PERSONA=:pid AND ROWNUM=1",[':pid'=>$id]);
@@ -680,7 +719,7 @@ switch ($accion) {
         if ($idResidencia)
             execProc($conn,"BEGIN $pkg.FIDE_RESIDENTES_ACTUALIZAR_SP(:p1,:p2,:p3); END;",[':p1'=>$id,':p2'=>$idResidencia,':p3'=>$idEstado]);
 
-        echo json_encode(['ok'=>true]);
+        jsonOut(['ok'=>true]);
         break;
 
     case 'actualizar_residencia':
@@ -693,7 +732,7 @@ switch ($accion) {
             "BEGIN $pkg.FIDE_RESIDENCIAS_ACTUALIZAR_SP(:p1,:p2,:p3,:p4,:p5); END;",
             [':p1'=>$id,':p2'=>$montoAlq,':p3'=>$montoMant,':p4'=>$idTipoPago,':p5'=>$idEstado]
         );
-        echo json_encode($r);
+        jsonOut($r);
         break;
 
     case 'actualizar_servicio':
@@ -710,7 +749,7 @@ switch ($accion) {
             $sql   = "BEGIN $pkg.FIDE_SERVICIOS_ACTUALIZAR_SP(:p1,:p2,NULL,:p4,:p5,:p6); END;";
             $binds = [':p1'=>$id,':p2'=>$descr,':p4'=>$idTipoServicio,':p5'=>$idTipoEvento,':p6'=>$idEstado];
         }
-        echo json_encode(execProc($conn, $sql, $binds));
+        jsonOut(execProc($conn, $sql, $binds));
         break;
 
     case 'actualizar_evento':
@@ -724,54 +763,54 @@ switch ($accion) {
             "BEGIN $pkg.FIDE_EVENTOS_ACTUALIZAR_SP(:p1,:p2,TO_DATE(:p3,'YYYY-MM-DD'),:p4,:p5,:p6); END;",
             [':p1'=>$id,':p2'=>$descr,':p3'=>$fechaEvento,':p4'=>$idTipoEvento,':p5'=>$idTipoEspacio,':p6'=>$idEstado]
         );
-        echo json_encode($r);
+        jsonOut($r);
         break;
 
     case 'eliminar_guardia':
     case 'eliminar_residente':
     case 'eliminar_persona':
         $id = (int)($_REQUEST['id'] ?? 0);
-        echo json_encode(execProc($conn,"BEGIN $pkg.FIDE_PERSONAS_ELIMINAR_SP(:p1); END;",[':p1'=>$id]));
+        jsonOut(execProc($conn,"BEGIN $pkg.FIDE_PERSONAS_ELIMINAR_SP(:p1); END;",[':p1'=>$id]));
         break;
 
     case 'eliminar_residencia':
         $id = (int)($_REQUEST['id'] ?? 0);
-        echo json_encode(execProc($conn,"BEGIN $pkg.FIDE_RESIDENCIAS_ELIMINAR_SP(:p1); END;",[':p1'=>$id]));
+        jsonOut(execProc($conn,"BEGIN $pkg.FIDE_RESIDENCIAS_ELIMINAR_SP(:p1); END;",[':p1'=>$id]));
         break;
 
     case 'eliminar_visita':
         $id = (int)($_REQUEST['id'] ?? 0);
-        echo json_encode(execProc($conn,"BEGIN $pkg.FIDE_VISITAS_ELIMINAR_SP(:p1); END;",[':p1'=>$id]));
+        jsonOut(execProc($conn,"BEGIN $pkg.FIDE_VISITAS_ELIMINAR_SP(:p1); END;",[':p1'=>$id]));
         break;
 
     case 'eliminar_paquete':
         $id = (int)($_REQUEST['id'] ?? 0);
-        echo json_encode(execProc($conn,"BEGIN $pkg.FIDE_PAQUETES_ELIMINAR_SP(:p1); END;",[':p1'=>$id]));
+        jsonOut(execProc($conn,"BEGIN $pkg.FIDE_PAQUETES_ELIMINAR_SP(:p1); END;",[':p1'=>$id]));
         break;
 
     case 'eliminar_factura':
         $id = (int)($_REQUEST['id'] ?? 0);
-        echo json_encode(execProc($conn,"BEGIN $pkg.FIDE_FACTURAS_ELIMINAR_SP(:p1); END;",[':p1'=>$id]));
+        jsonOut(execProc($conn,"BEGIN $pkg.FIDE_FACTURAS_ELIMINAR_SP(:p1); END;",[':p1'=>$id]));
         break;
 
     case 'eliminar_servicio':
         $id = (int)($_REQUEST['id'] ?? 0);
-        echo json_encode(execProc($conn,"BEGIN $pkg.FIDE_SERVICIOS_ELIMINAR_SP(:p1); END;",[':p1'=>$id]));
+        jsonOut(execProc($conn,"BEGIN $pkg.FIDE_SERVICIOS_ELIMINAR_SP(:p1); END;",[':p1'=>$id]));
         break;
 
     case 'eliminar_evento':
         $id = (int)($_REQUEST['id'] ?? 0);
-        echo json_encode(execProc($conn,"BEGIN $pkg.FIDE_EVENTOS_ELIMINAR_SP(:p1); END;",[':p1'=>$id]));
+        jsonOut(execProc($conn,"BEGIN $pkg.FIDE_EVENTOS_ELIMINAR_SP(:p1); END;",[':p1'=>$id]));
         break;
 
     case 'eliminar_vehiculo':
         $placa = strtoupper(trim($_REQUEST['placa'] ?? ''));
-        echo json_encode(execProc($conn,"BEGIN $pkg.FIDE_VEHICULOS_ELIMINAR_SP(:p1); END;",[':p1'=>$placa]));
+        jsonOut(execProc($conn,"BEGIN $pkg.FIDE_VEHICULOS_ELIMINAR_SP(:p1); END;",[':p1'=>$placa]));
         break;
 
     default:
         http_response_code(400);
-        echo json_encode(['error'=>true,'mensaje'=>"Acción '$accion' no reconocida."]);
+        jsonOut(['error'=>true,'mensaje'=>"Acción '$accion' no reconocida."]);
         break;
 }
 

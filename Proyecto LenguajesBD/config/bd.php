@@ -1,10 +1,10 @@
 <?php
 
 //DANIEL Laptop
-putenv("TNS_ADMIN=D:\\PROYECTO_LENGUAJESBD_G2_LUNES_NOCHE\\Proyecto LenguajesBD\\Wallet_LenguajesBD");
+//putenv("TNS_ADMIN=D:\\PROYECTO_LENGUAJESBD_G2_LUNES_NOCHE\\Proyecto LenguajesBD\\Wallet_LenguajesBD");
 
 //DANIEL PC
-//putenv("TNS_ADMIN=D:\\Proyectos y trabajos de la U\\Lenguajes de BD\\PROYECTO_LENGUAJESBD_G2_LUNES_NOCHE\\Proyecto LenguajesBD\\Wallet_LenguajesBD");
+putenv("TNS_ADMIN=D:\\Proyectos y trabajos de la U\\Lenguajes de BD\\PROYECTO_LENGUAJESBD_G2_LUNES_NOCHE\\Proyecto LenguajesBD\\Wallet_LenguajesBD");
 
 //PAOLA
 //putenv("TNS_ADMIN=C:\\Users\\paopo\\OneDrive\\Escritorio\\LENGUAJES BASES DE DATOS\\PROYECTO_LENGUAJESBD_G2_LUNES_NOCHE\\Proyecto LenguajesBD\\Wallet_LenguajesBD");
