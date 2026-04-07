@@ -109,12 +109,14 @@ async function cargarGuardias() {
                 <td>${g.CORREO ?? '--'}</td>
                 <td>${g.USUARIO ?? '<em style="color:#aaa">sin usuario</em>'}</td>
                 <td>${estadoBadge(g.NOMBRE_ESTADO)}</td>
+                <td><span class="badge-stat" title="Turnos trabajados">${g.TOTAL_TURNOS ?? 0} turnos</span></td>
+                <td><span class="badge-stat" title="Reportes generados">${g.TOTAL_REPORTES ?? 0} reportes</span></td>
                 <td class="acciones-celda">
                     <button class="btn-acc btn-editar" onclick="editarGuardia(${g.ID_PERSONA},'${(g.NOMBRE || '').replace(/'/g, "\\'")}','${(g.APELLIDO_PATERNO || '').replace(/'/g, "\\'")}','${(g.APELLIDO_MATERNO || '').replace(/'/g, "\\'")}','${g.TELEFONO ?? ''}','${g.CORREO ?? ''}','${g.USUARIO ?? ''}',${g.ID_ESTADO ?? 1})">✎ Editar</button>
                     <button class="btn-acc btn-vetar" onclick="eliminarPersona(${g.ID_PERSONA},'guardias')">✕ Baja</button>
                 </td>
             </tr>`
-        ).join('') || '<tr><td colspan="7">Sin registros</td></tr>';
+        ).join('') || '<tr><td colspan="9">Sin registros</td></tr>';
     } catch (e) { console.error('guardias:', e); }
 }
 
@@ -190,14 +192,19 @@ async function cargarResidentes() {
                 <td>${r.CORREO ?? '--'}</td>
                 <td>${r.ID_RESIDENCIA ?? '--'}</td>
                 <td>${estadoBadge(r.NOMBRE_ESTADO)}</td>
+                <td><span class="badge-stat" title="Total facturas">${r.TOTAL_FACTURAS ?? 0} fact.</span></td>
+                <td><span class="badge-stat badge-stat-alerta" title="Facturas activas/pendientes">${r.FACTURAS_ACTIVAS ?? 0} activas</span></td>
+                <td><span class="badge-stat" title="Vehículos registrados">${r.TOTAL_VEHICULOS ?? 0} veh.</span></td>
+                <td><span class="badge-stat" title="Visitas recibidas">${r.TOTAL_VISITAS ?? 0} visitas</span></td>
                 <td class="acciones-celda">
                     <button class="btn-acc btn-editar" onclick="editarResidente(${r.ID_PERSONA},'${(r.NOMBRE || '').replace(/'/g, "\\'")}','${(r.APELLIDO_PATERNO || '').replace(/'/g, "\\'")}','${(r.APELLIDO_MATERNO || '').replace(/'/g, "\\'")}','${r.TELEFONO ?? ''}','${r.CORREO ?? ''}',${r.ID_RESIDENCIA ?? 0},${r.ID_ESTADO ?? 1})">✎ Editar</button>
                     <button class="btn-acc btn-vetar"  onclick="eliminarPersona(${r.ID_PERSONA},'residentes')">✕ Baja</button>
                 </td>
             </tr>`
-        ).join('') || '<tr><td colspan="8">Sin registros</td></tr>';
+        ).join('') || '<tr><td colspan="11">Sin registros</td></tr>';
     } catch (e) { console.error('residentes:', e); }
 }
+
 
 function editarResidente(id, nombre, pat, mat, tel, correo, idResidencia, idEstado) {
     const form = document.querySelector('#residentes .bloque-formulario form');
@@ -260,12 +267,14 @@ async function cargarResidencias() {
                 <td>₡${Number(r.MONTO_MANTENIMIENTO).toLocaleString()}</td>
                 <td>${r.TIPO_PAGO ?? '--'}</td>
                 <td>${estadoBadge(r.NOMBRE_ESTADO)}</td>
+                <td><span class="badge-stat" title="Residentes asociados">${r.TOTAL_RESIDENTES ?? 0} res.</span></td>
+                <td><span class="badge-stat" title="Paquetes pendientes">${r.TOTAL_PAQUETES ?? 0} paq.</span></td>
                 <td class="acciones-celda">
                     <button class="btn-acc btn-editar" onclick="editarResidencia(${r.ID_RESIDENCIA},${r.MONTO_ALQUILER},${r.MONTO_MANTENIMIENTO},${r.ID_TIPO_PAGO ?? 1},${r.ID_ESTADO ?? 1})">✎ Editar</button>
                     <button class="btn-acc btn-vetar"  onclick="eliminarResidencia(${r.ID_RESIDENCIA})">✕ Baja</button>
                 </td>
             </tr>`
-        ).join('') || '<tr><td colspan="6">Sin registros</td></tr>';
+        ).join('') || '<tr><td colspan="8">Sin registros</td></tr>';
     } catch (e) { console.error('residencias:', e); }
 }
 
@@ -281,6 +290,16 @@ function editarResidencia(id, montoAlq, montoMant, idTipoPago, idEstado) {
 }
 
 async function eliminarResidencia(id) {
+    // Primero verificar si tiene residentes usando la función Oracle
+    const check = await apiGet('verificar_residentes_residencia', { id_residencia: id });
+    if (!check.puede_eliminar) {
+        alert(
+            `No se puede dar de baja la Residencia ${id}.\n` +
+            `Tiene ${check.total_residentes} residente(s) asociado(s).\n` +
+            `Reasigne o elimine los residentes primero.`
+        );
+        return;
+    }
     if (!confirm('¿Dar de baja esta residencia?')) return;
     const r = await api({ accion: 'eliminar_residencia', id });
     if (r.error) { alert('Error: ' + r.mensaje); return; }
@@ -381,7 +400,7 @@ async function eliminarFactura(id) {
     if (!confirm('¿Anular esta factura?')) return;
     const r = await api({ accion: 'eliminar_factura', id });
     if (r.error) { alert('Error: ' + r.mensaje); return; }
-    cargarFacturas(); cargarResumen();
+    cargarFacturas(); cargarResumen(); cargarStatsFacturas();
 }
 
 async function guardarFactura(e) {
@@ -405,7 +424,7 @@ async function guardarFactura(e) {
         mostrarMensaje(form.closest('.bloque-formulario'), 'Error: ' + r.mensaje, true);
     } else {
         mostrarMensaje(form.closest('.bloque-formulario'), 'Factura guardada.');
-        form.reset(); cargarFacturas(); cargarResumen();
+        form.reset(); cargarFacturas(); cargarResumen(); cargarStatsFacturas();
     }
 }
 
@@ -446,7 +465,7 @@ async function eliminarServicio(id) {
     if (!confirm('¿Dar de baja este servicio?')) return;
     const r = await api({ accion: 'eliminar_servicio', id });
     if (r.error) { alert('Error: ' + r.mensaje); return; }
-    cargarServicios();
+    cargarServicios(); cargarStatsServicios();
 }
 
 async function guardarServicio(e) {
@@ -466,16 +485,14 @@ async function guardarServicio(e) {
         id_estado: sels[2]?.value ?? 1,
         id_tipo_evento: form.dataset.tipoEvento ?? 1,
     };
-
     if (!data.descr_servicio) { mostrarMensaje(form.closest('.bloque-formulario'), 'Descripcion requerida.', true); return; }
-
     const r = await api(data);
     if (r.error) {
         mostrarMensaje(form.closest('.bloque-formulario'), 'Error: ' + r.mensaje, true);
     } else {
         mostrarMensaje(form.closest('.bloque-formulario'), editId ? 'Servicio actualizado.' : 'Servicio registrado.');
         cancelarEdicion(form);
-        cargarServicios();
+        cargarServicios(); cargarStatsServicios();
     }
 }
 
@@ -515,7 +532,7 @@ async function eliminarEvento(id) {
     if (!confirm('¿Dar de baja este evento?')) return;
     const r = await api({ accion: 'eliminar_evento', id });
     if (r.error) { alert('Error: ' + r.mensaje); return; }
-    cargarEventos(); cargarResumen();
+    cargarEventos(); cargarResumen(); cargarStatsEventos();
 }
 
 async function guardarEvento(e) {
@@ -524,7 +541,6 @@ async function guardarEvento(e) {
     const inputs = form.querySelectorAll('input');
     const sels = form.querySelectorAll('select');
     const editId = form.dataset.editId;
-
     const descrEvento = form.querySelector('textarea')?.value.trim() ?? '';
     const data = {
         accion: editId ? 'actualizar_evento' : 'insertar_evento',
@@ -535,17 +551,15 @@ async function guardarEvento(e) {
         id_estado: sels[1]?.value ?? 1,
         id_tipo_espacio: form.dataset.tipoEspacio ?? 1,
     };
-
     if (!data.descr_evento) { mostrarMensaje(form.closest('.bloque-formulario'), 'Descripcion requerida.', true); return; }
     if (!data.id_tipo_evento) { mostrarMensaje(form.closest('.bloque-formulario'), 'Seleccione el tipo.', true); return; }
-
     const r = await api(data);
     if (r.error) {
         mostrarMensaje(form.closest('.bloque-formulario'), 'Error: ' + r.mensaje, true);
     } else {
         mostrarMensaje(form.closest('.bloque-formulario'), editId ? 'Evento actualizado.' : 'Evento registrado.');
         cancelarEdicion(form);
-        cargarEventos(); cargarResumen();
+        cargarEventos(); cargarResumen(); cargarStatsEventos();
     }
 }
 
@@ -587,7 +601,7 @@ async function cargarSelectsAdmin() {
 
         const selEstG = document.querySelector('#guardias .bloque-formulario select');
         if (selEstG) llenarSelect(selEstG, estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
-        
+
         const selResRes = document.querySelector('#residentes .bloque-formulario select:nth-of-type(1)');
         if (selResRes) {
             selResRes.id = 'sel-residencia-residente';
@@ -668,21 +682,85 @@ function iniciarAutoRefresh() {
         cargarServicios();
         cargarEventos();
         cargarVehiculos();
+        cargarStatsFacturas();
+        cargarStatsServicios();
+        cargarStatsEventos();
     }, 20000);
 }
 
+async function cargarStatsFacturas() {
+    try {
+        const stats = await apiGet('stats_facturas');
+
+        const renderItems = (items) =>
+            items.length
+                ? items.map(i => `
+                    <div class="stats-fila">
+                        <span class="stats-label">${i.nombre}</span>
+                        <span class="stats-valor">${i.total}</span>
+                    </div>`).join('')
+                : '<p style="color:#aaa;font-size:.85rem">Sin datos</p>';
+
+        const el1 = document.getElementById('stats-por-estado');
+        const el2 = document.getElementById('stats-por-tipo-pago');
+        const el3 = document.getElementById('stats-por-forma-pago');
+
+        if (el1) el1.innerHTML =
+            `<h4 class="stats-titulo">📋 Por Estado</h4>${renderItems(stats.por_estado)}`;
+        if (el2) el2.innerHTML =
+            `<h4 class="stats-titulo">🗓️ Por Tipo de Pago</h4>${renderItems(stats.por_tipo_pago)}`;
+        if (el3) el3.innerHTML =
+            `<h4 class="stats-titulo">💳 Por Forma de Pago</h4>${renderItems(stats.por_forma_pago)}`;
+    } catch (e) { console.error('stats_facturas:', e); }
+}
+
+// ── Panel de estadísticas del módulo de Servicios ───────────────────────────
+async function cargarStatsServicios() {
+    try {
+        const stats = await apiGet('stats_servicios_tipo');
+        const el = document.getElementById('stats-servicios-tipo');
+        if (!el) return;
+        el.innerHTML = stats.length
+            ? stats.map(s =>
+                `<div class="stats-fila">
+                    <span class="stats-label">${s.tipo}</span>
+                    <span class="stats-valor">${s.total}</span>
+                </div>`).join('')
+            : '<p style="color:#aaa;font-size:.85rem">Sin datos</p>';
+    } catch (e) { console.error('stats_servicios:', e); }
+}
+
+// ── Panel de estadísticas del módulo de Eventos ─────────────────────────────
+async function cargarStatsEventos() {
+    try {
+        const stats = await apiGet('stats_eventos_tipo');
+        const el = document.getElementById('stats-eventos-tipo');
+        if (!el) return;
+        el.innerHTML = stats.length
+            ? stats.map(s =>
+                `<div class="stats-fila">
+                    <span class="stats-label">${s.tipo}</span>
+                    <span class="stats-valor">${s.total}</span>
+                </div>`).join('')
+            : '<p style="color:#aaa;font-size:.85rem">Sin datos</p>';
+    } catch (e) { console.error('stats_eventos:', e); }
+}
 document.addEventListener('DOMContentLoaded', async () => {
     inyectarMensajes();
     asignarFormularios();
     await cargarSelectsAdmin();
-    await Promise.all([
-        cargarResumen(),
+    await cargarResumen();          
+    await Promise.all([             
         cargarGuardias(),
         cargarResidentes(),
         cargarResidencias(),
+    ]);
+    await Promise.all([
         cargarVisitantes(),
         cargarPaquetes(),
         cargarFacturas(),
+    ]);
+    await Promise.all([
         cargarServicios(),
         cargarEventos(),
         cargarVehiculos(),

@@ -295,3 +295,61 @@ tbody tr:hover {
 
 .btn-prog     { background-color: #9271c3; }
 .btn-prog:hover    { background-color: #523974; }
+/* ── Badges de estadísticas en filas de tablas ─────────────────────── */
+.badge-stat {
+    display: inline-block;
+    background: #e8f4fd;
+    color: #2c5f8a;
+    border-radius: 12px;
+    padding: 2px 10px;
+    font-size: .80rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.badge-stat-alerta {
+    background: #fef3cd;
+    color: #856404;
+}
+ 
+/* ── Paneles de estadísticas en módulos ────────────────────────────── */
+.stats-panel {
+    display: flex;
+    gap: 1.2rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+}
+.stats-bloque {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem 1.4rem;
+    min-width: 200px;
+    flex: 1;
+}
+.stats-titulo {
+    font-size: .90rem;
+    font-weight: 700;
+    color: #495057;
+    margin: 0 0 .7rem 0;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: .4rem;
+}
+.stats-fila {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 0;
+    font-size: .85rem;
+    border-bottom: 1px solid #f1f1f1;
+}
+.stats-label {
+    color: #495057;
+}
+.stats-valor {
+    font-weight: 700;
+    color: #2c5f8a;
+    background: #e8f4fd;
+    border-radius: 10px;
+    padding: 1px 9px;
+    font-size: .80rem;
+}
