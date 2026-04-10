@@ -29,12 +29,27 @@ function estadoBadge(estado) {
 }
 
 function llenarSelect(sel, items, val, txt) {
+    if (!sel || !Array.isArray(items)) return;
     sel.innerHTML = '<option value="">-- Seleccione --</option>';
     items.forEach(i => {
         const o = document.createElement('option');
         o.value = i[val]; o.textContent = i[txt];
         sel.appendChild(o);
     });
+}
+
+// Guardias NO pueden poner Inactivo (ID 2)
+// IDs por sección — sin ID 2 para guardia
+const ESTADOS_GUARDIA_SECCION = {
+    visitantes: [4, 5],         // Adentro, Afuera
+    paquetes:   [16, 3],        // Entregado, Pendiente
+    vehiculos:  [4, 5, 6],      // Adentro, Afuera, Vetado
+    eventos:    [12, 13, 14],   // Programado, En proceso, Resuelto
+    espacios:   [9, 10, 7, 8],  // Reservado, Libre, En mantenimiento, Ocupado
+};
+
+function filtrarEstados(todos, ids) {
+    return ids.map(id => todos.find(e => Number(e.ID_ESTADO) === id)).filter(Boolean);
 }
 
 function mostrarMensaje(contenedor, texto, esError = false) {
@@ -83,6 +98,7 @@ async function cargarTurnos() {
             `<tr><td>${t.GUARDIA}</td><td>${t.FECHA_TURNO ?? t.FECHA}</td>
              <td>${t.HORARIO}</td><td>${estadoBadge(t.NOMBRE_ESTADO)}</td></tr>`
         ).join('') || '<tr><td colspan="4">Sin turnos</td></tr>';
+        refiltrar('#turnos');
     } catch (e) { console.error('turnos:', e); }
 }
 
@@ -106,6 +122,7 @@ async function cargarVisitantes() {
                 </td>
             </tr>`
         ).join('') || '<tr><td colspan="6">Sin visitantes</td></tr>';
+        refiltrar('#visitantes');
     } catch (e) { console.error('visitantes:', e); }
 }
 
@@ -208,6 +225,7 @@ async function cargarPaquetes() {
                 </td>
             </tr>`
         ).join('') || '<tr><td colspan="6">Sin paquetes</td></tr>';
+        refiltrar('#paquetes');
     } catch (e) { console.error('paquetes:', e); }
 }
 
@@ -261,6 +279,7 @@ async function cargarVehiculosResidentes() {
                 </td>
             </tr>`
         ).join('') || '<tr><td colspan="5">Sin vehículos de residentes</td></tr>';
+        refiltrar('#vehiculos');
     } catch (e) { console.error('vehículos residentes:', e); }
 }
 
@@ -360,6 +379,7 @@ async function cargarVehiculosVisitas() {
                 </td>
             </tr>`
         ).join('') || '<tr><td colspan="5">Sin vehículos de visitas</td></tr>';
+        refiltrar('#vehiculos');
     } catch (e) { console.error('vehículos visitas:', e); }
 }
 
@@ -397,6 +417,22 @@ async function cargarEventos() {
         const data = await apiGet('listar_eventos');
         const tb   = document.querySelector('#eventos .bloque-tabla table tbody');
         if (!tb) return;
+
+        // Buscar IDs de estados por nombre desde los estados cargados globalmente
+        const idPorNombre = (nombre) => {
+            const e = _estadosGuardia.find(s => (s.NOMBRE_ESTADO || '').toUpperCase() === nombre.toUpperCase());
+            return e ? e.ID_ESTADO : null;
+        };
+        const idProg  = idPorNombre('Programado')  ?? idPorNombre('PROGRAMADO');
+        const idProc  = idPorNombre('En Proceso')  ?? idPorNombre('EN PROCESO');
+        const idRes   = idPorNombre('Resuelto')     ?? idPorNombre('RESUELTO');
+        const idFinal = idPorNombre('Finalizado')   ?? idPorNombre('FINALIZADO');
+
+        const btnProg  = idProg  ? `<button class="btn-acc btn-prog"     onclick="cambiarEstadoEvento(${'{ev.ID_EVENTO}'},${idProg})"  title="Programado">📋 Prog.</button>` : '';
+        const btnProc  = idProc  ? `<button class="btn-acc btn-proceso"  onclick="cambiarEstadoEvento(${'{ev.ID_EVENTO}'},${idProc})"  title="En Proceso">⚙ Proceso</button>` : '';
+        const btnRes   = idRes   ? `<button class="btn-acc btn-resuelto" onclick="cambiarEstadoEvento(${'{ev.ID_EVENTO}'},${idRes})"   title="Resuelto">✓ Resuelto</button>` : '';
+        const btnFinal = idFinal ? `<button class="btn-acc btn-final"    onclick="cambiarEstadoEvento(${'{ev.ID_EVENTO}'},${idFinal})" title="Finalizado">⬛ Final</button>` : '';
+
         tb.innerHTML = data.map(ev => `
             <tr>
                 <td>${ev.DESCR_EVENTO}</td>
@@ -404,20 +440,22 @@ async function cargarEventos() {
                 <td>${ev.FECHA_EVENTO}</td>
                 <td>${estadoBadge(ev.NOMBRE_ESTADO)}</td>
                 <td class="acciones-celda">
-                    <button class="btn-acc btn-prog"     onclick="cambiarEstadoEvento(${ev.ID_EVENTO},12)" title="Programado">📋 Prog.</button>
-                    <button class="btn-acc btn-proceso"  onclick="cambiarEstadoEvento(${ev.ID_EVENTO},13)" title="En Proceso">⚙ Proceso</button>
-                    <button class="btn-acc btn-resuelto" onclick="cambiarEstadoEvento(${ev.ID_EVENTO},14)" title="Resuelto">✓ Resuelto</button>
-                    <button class="btn-acc btn-final"    onclick="cambiarEstadoEvento(${ev.ID_EVENTO},17)" title="Finalizado">⬛ Final</button>
-                    <button class="btn-acc btn-editar"   onclick="editarEvento(${ev.ID_EVENTO},'${(ev.DESCR_EVENTO||'').replace(/'/g,"\\'")}',${ev.ID_TIPO_EVENTO??1},'${ev.FECHA_EVENTO??''}',${ev.ID_ESTADO??1})">✎ Editar</button>
+                    ${idProg  ? `<button class="btn-acc btn-prog"     onclick="cambiarEstadoEvento(${ev.ID_EVENTO},${idProg})"  title="Programado">📋 Prog.</button>` : ''}
+                    ${idProc  ? `<button class="btn-acc btn-proceso"  onclick="cambiarEstadoEvento(${ev.ID_EVENTO},${idProc})"  title="En Proceso">⚙ Proceso</button>` : ''}
+                    ${idRes   ? `<button class="btn-acc btn-resuelto" onclick="cambiarEstadoEvento(${ev.ID_EVENTO},${idRes})"   title="Resuelto">✓ Resuelto</button>` : ''}
+                    ${idFinal ? `<button class="btn-acc btn-final"    onclick="cambiarEstadoEvento(${ev.ID_EVENTO},${idFinal})" title="Finalizado">⬛ Final</button>` : ''}
+                    <button class="btn-acc btn-editar" onclick="editarEvento(${ev.ID_EVENTO},'${(ev.DESCR_EVENTO||'').replace(/'/g,"\\'")}',${ev.ID_TIPO_EVENTO??1},'${ev.FECHA_EVENTO??''}',${ev.ID_ESTADO??1})">✎ Editar</button>
                 </td>
             </tr>`
         ).join('') || '<tr><td colspan="5">Sin eventos</td></tr>';
+        refiltrar('#eventos');
     } catch (e) { console.error('eventos:', e); }
 }
 
 async function cambiarEstadoEvento(id, estado) {
-    const nombres = {12:'Programado',13:'En Proceso',14:'Resuelto',17:'Finalizado'};
-    if (!confirm(`¿Cambiar estado a "${nombres[estado]}"?`)) return;
+    const est = _estadosGuardia.find(s => String(s.ID_ESTADO) === String(estado));
+    const nombre = est ? est.NOMBRE_ESTADO : estado;
+    if (!confirm(`¿Cambiar estado a "${nombre}"?`)) return;
     const r = await api({ accion:'actualizar_estado_evento', id, estado });
     if (r.error) { alert('Error: ' + r.mensaje); return; }
     cargarEventos();
@@ -447,8 +485,9 @@ async function guardarEvento(e) {
     if (editId) {
         const estado = parseInt(inputs[3]?.value ?? 0);
         if (!estado) { mostrarMensaje(form.closest('.bloque-formulario'), 'Seleccione un estado.', true); return; }
-        if (![12, 13, 14, 17].includes(estado)) {
-            mostrarMensaje(form.closest('.bloque-formulario'), 'Solo puede usar: Programado, En Proceso, Resuelto o Finalizado.', true); return;
+        const estadosValidos = filtrarEstados(_estadosGuardia, ESTADOS_GUARDIA_SECCION.eventos).map(s => s.ID_ESTADO);
+        if (estadosValidos.length > 0 && !estadosValidos.includes(estado)) {
+            mostrarMensaje(form.closest('.bloque-formulario'), 'Estado no válido para eventos.', true); return;
         }
         const r = await api({ accion:'actualizar_estado_evento', id:editId, estado });
         if (r.error) { mostrarMensaje(form.closest('.bloque-formulario'), 'Error: ' + r.mensaje, true); return; }
@@ -503,6 +542,7 @@ async function cargarResidentes() {
                 <td>${r.ID_RESIDENCIA ?? '--'}</td><td>${estadoBadge(r.NOMBRE_ESTADO)}</td>
             </tr>`
         ).join('') || '<tr><td colspan="6">Sin residentes</td></tr>';
+        refiltrar('#residentes');
     } catch (e) { console.error('residentes:', e); }
 }
 
@@ -520,6 +560,7 @@ async function cargarResidencias() {
                 <td>${estadoBadge(r.NOMBRE_ESTADO)}</td>
             </tr>`
         ).join('') || '<tr><td colspan="5">Sin residencias</td></tr>';
+        refiltrar('#residencias');
     } catch (e) { console.error('residencias:', e); }
 }
 
@@ -540,6 +581,7 @@ async function cargarEspacios() {
                 </td>
             </tr>`
         ).join('') || '<tr><td colspan="5">Sin espacios</td></tr>';
+        refiltrar('#espacios');
     } catch (e) { console.error('espacios:', e); }
 }
 
@@ -635,58 +677,57 @@ function ocultarCancelarEdicion(form) {
     if (btn) btn.style.display = 'none';
 }
 
-async function cargarSelectsGuardia() {
-    try {
-        const [residencias, roles, estados, tiposEvento, personas, residentes] = await Promise.all([
-            apiGet('listar_residencias'),
-            apiGet('listar_roles'),
-            apiGet('listar_estados_guardia'),
-            apiGet('listar_tipos_evento'),
-            apiGet('listar_personas'),
-            apiGet('listar_residentes'),
-        ]);
+// Estados cargados globalmente para lookup por nombre
+let _estadosGuardia = [];
 
+async function cargarSelectsGuardia() {
+    const safe = async (accion) => { try { const d = await apiGet(accion); return Array.isArray(d) ? d : []; } catch { return []; } };
+
+    const [residencias, roles, estados, tiposEvento, personas] = await Promise.all([
+        safe('listar_residencias'),
+        safe('listar_roles'),
+        safe('listar_estados_guardia'),
+        safe('listar_tipos_evento'),
+        safe('listar_personas'),
+    ]);
+
+    _estadosGuardia = estados;
+
+    try {
         const visRes = document.querySelector('#visitantes .bloque-formulario select:nth-of-type(1)');
         if (visRes) {
             llenarSelect(visRes, residencias, 'ID_RESIDENCIA', 'ID_RESIDENCIA');
-            residencias.forEach((r, i) => {
-                if (visRes.options[i+1]) visRes.options[i+1].textContent = `Res. ${r.ID_RESIDENCIA} — ₡${Number(r.MONTO_ALQUILER).toLocaleString()}`;
-            });
+            residencias.forEach((r, i) => { if (visRes.options[i+1]) visRes.options[i+1].textContent = `Res. ${r.ID_RESIDENCIA} — ₡${Number(r.MONTO_ALQUILER).toLocaleString()}`; });
         }
-        const visRol = document.querySelector('#visitantes .bloque-formulario select:nth-of-type(2)');
-        if (visRol) llenarSelect(visRol, roles, 'ID_ROL', 'ROL');
-        const visEst = document.querySelector('#visitantes .bloque-formulario select:nth-of-type(3)');
-        if (visEst) llenarSelect(visEst, estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
+        llenarSelect(document.querySelector('#visitantes .bloque-formulario select:nth-of-type(2)'), roles, 'ID_ROL', 'ROL');
+        llenarSelect(document.querySelector('#visitantes .bloque-formulario select:nth-of-type(3)'), filtrarEstados(estados, ESTADOS_GUARDIA_SECCION.visitantes), 'ID_ESTADO', 'NOMBRE_ESTADO');
+    } catch (e) { console.error('selects visitantes:', e); }
 
-        const paqPer = document.querySelector('#paquetes .bloque-formulario select:nth-of-type(1)');
-        if (paqPer) llenarSelect(paqPer, personas, 'ID_PERSONA', 'NOMBRE_COMPLETO');
+    try {
+        llenarSelect(document.querySelector('#paquetes .bloque-formulario select:nth-of-type(1)'), personas, 'ID_PERSONA', 'NOMBRE_COMPLETO');
         const paqRes = document.querySelector('#paquetes .bloque-formulario select:nth-of-type(2)');
         if (paqRes) {
             llenarSelect(paqRes, residencias, 'ID_RESIDENCIA', 'ID_RESIDENCIA');
             residencias.forEach((r, i) => { if (paqRes.options[i+1]) paqRes.options[i+1].textContent = `Res. ${r.ID_RESIDENCIA}`; });
         }
-        const paqEst = document.querySelector('#paquetes .bloque-formulario select:nth-of-type(3)');
-        if (paqEst) llenarSelect(paqEst, estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
+        llenarSelect(document.querySelector('#paquetes .bloque-formulario select:nth-of-type(3)'), filtrarEstados(estados, ESTADOS_GUARDIA_SECCION.paquetes), 'ID_ESTADO', 'NOMBRE_ESTADO');
+    } catch (e) { console.error('selects paquetes:', e); }
 
-        const selVehResPer = document.getElementById('sel-veh-res-persona');
-        if (selVehResPer) llenarSelect(selVehResPer, personas, 'ID_PERSONA', 'NOMBRE_COMPLETO');
-        const selVehResEst = document.getElementById('sel-veh-res-estado');
-        if (selVehResEst) llenarSelect(selVehResEst, estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
+    try {
+        llenarSelect(document.getElementById('sel-veh-res-persona'), personas, 'ID_PERSONA', 'NOMBRE_COMPLETO');
+        llenarSelect(document.getElementById('sel-veh-res-estado'), filtrarEstados(estados, ESTADOS_GUARDIA_SECCION.vehiculos), 'ID_ESTADO', 'NOMBRE_ESTADO');
+        llenarSelect(document.getElementById('sel-veh-vis-persona'), personas, 'ID_PERSONA', 'NOMBRE_COMPLETO');
+        llenarSelect(document.getElementById('sel-veh-vis-estado'), filtrarEstados(estados, ESTADOS_GUARDIA_SECCION.vehiculos), 'ID_ESTADO', 'NOMBRE_ESTADO');
+    } catch (e) { console.error('selects vehiculos:', e); }
 
-        const selVehVisPer = document.getElementById('sel-veh-vis-persona');
-        if (selVehVisPer) llenarSelect(selVehVisPer, personas, 'ID_PERSONA', 'NOMBRE_COMPLETO');
-        const selVehVisEst = document.getElementById('sel-veh-vis-estado');
-        if (selVehVisEst) llenarSelect(selVehVisEst, estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
+    try {
+        llenarSelect(document.querySelector('#eventos .bloque-formulario select:nth-of-type(1)'), tiposEvento, 'ID_TIPO_EVENTO', 'TIPO_EVENTO');
+        llenarSelect(document.querySelector('#eventos .bloque-formulario select:nth-of-type(2)'), filtrarEstados(estados, ESTADOS_GUARDIA_SECCION.eventos), 'ID_ESTADO', 'NOMBRE_ESTADO');
+    } catch (e) { console.error('selects eventos:', e); }
 
-        const evTipo = document.querySelector('#eventos .bloque-formulario select:nth-of-type(1)');
-        if (evTipo) llenarSelect(evTipo, tiposEvento, 'ID_TIPO_EVENTO', 'TIPO_EVENTO');
-        const evEst  = document.querySelector('#eventos .bloque-formulario select:nth-of-type(2)');
-        if (evEst)  llenarSelect(evEst, estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
-
-        const espEst = document.querySelector('#espacios .bloque-formulario select');
-        if (espEst) llenarSelect(espEst, estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
-
-    } catch (e) { console.error('selects guardia:', e); }
+    try {
+        llenarSelect(document.querySelector('#espacios .bloque-formulario select'), filtrarEstados(estados, ESTADOS_GUARDIA_SECCION.espacios), 'ID_ESTADO', 'NOMBRE_ESTADO');
+    } catch (e) { console.error('selects espacios:', e); }
 }
 
 function inyectarMensajes() {
@@ -746,4 +787,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         cargarEspacios(),
     ]);
     iniciarAutoRefresh();
+});
+
+function aplicarFiltro(input) {
+    const q = input.value.trim().toLowerCase();
+    const bloque  = input.closest('.bloque-tabla');
+    const section = input.closest('.seccion');
+    const targetId = input.dataset.tabla;
+    const table = targetId
+        ? document.getElementById(targetId)
+        : bloque
+            ? bloque.querySelector('table')
+            : section?.querySelector('table');
+    if (!table) return;
+    table.querySelectorAll('tbody tr').forEach(tr => {
+        tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+}
+
+function refiltrar(seccionId) {
+    const inputs = document.querySelectorAll(`${seccionId} .buscador-tabla`);
+    inputs.forEach(input => { if (input.value.trim()) aplicarFiltro(input); });
+}
+
+document.addEventListener('input', e => {
+    if (e.target.matches('.buscador-tabla')) aplicarFiltro(e.target);
 });

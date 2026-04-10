@@ -33,12 +33,31 @@ function estadoBadge(estado) {
 }
 
 function llenarSelect(sel, items, val, txt) {
+    if (!sel || !Array.isArray(items)) return;
     sel.innerHTML = '<option value="">-- Seleccione --</option>';
     items.forEach(i => {
         const o = document.createElement('option');
         o.value = i[val]; o.textContent = i[txt];
         sel.appendChild(o);
     });
+}
+
+// IDs de estados por entidad
+const ESTADOS_POR_SECCION = {
+    guardias:   [1, 2, 11],        // Activo, Inactivo, En vacaciones
+    residentes: [1, 2],            // Activo, Inactivo
+    residencias:[8, 10, 7, 9, 2],  // Ocupado, Libre, En mantenimiento, Reservado, Inactivo
+    visitantes: [4, 5, 2],         // Adentro, Afuera, Inactivo
+    paquetes:   [16, 3, 2],        // Entregado, Pendiente, Inactivo
+    facturas:   [1, 2, 3],         // Activo, Inactivo, Pendiente
+    servicios:  [1, 2],            // Activo, Inactivo
+    eventos:    [12, 13, 2, 14],   // Programado, En proceso, Inactivo, Resuelto
+    vehiculos:  [4, 5, 6, 2],      // Adentro, Afuera, Vetado, Inactivo
+    espacios:   [9, 10, 7, 8, 2],  // Reservado, Libre, En mantenimiento, Ocupado, Inactivo
+};
+
+function filtrarEstados(todos, ids) {
+    return ids.map(id => todos.find(e => Number(e.ID_ESTADO) === id)).filter(Boolean);
 }
 
 function mostrarMensaje(contenedor, texto, esError = false) {
@@ -117,6 +136,7 @@ async function cargarGuardias() {
                 </td>
             </tr>`
         ).join('') || '<tr><td colspan="9">Sin registros</td></tr>';
+        refiltrar('#guardias');
     } catch (e) { console.error('guardias:', e); }
 }
 
@@ -202,6 +222,7 @@ async function cargarResidentes() {
                 </td>
             </tr>`
         ).join('') || '<tr><td colspan="11">Sin registros</td></tr>';
+        refiltrar('#residentes');
     } catch (e) { console.error('residentes:', e); }
 }
 
@@ -275,6 +296,7 @@ async function cargarResidencias() {
                 </td>
             </tr>`
         ).join('') || '<tr><td colspan="8">Sin registros</td></tr>';
+        refiltrar('#residencias');
     } catch (e) { console.error('residencias:', e); }
 }
 
@@ -290,7 +312,6 @@ function editarResidencia(id, montoAlq, montoMant, idTipoPago, idEstado) {
 }
 
 async function eliminarResidencia(id) {
-    // Primero verificar si tiene residentes usando la función Oracle
     const check = await apiGet('verificar_residentes_residencia', { id_residencia: id });
     if (!check.puede_eliminar) {
         alert(
@@ -347,6 +368,7 @@ async function cargarVisitantes() {
                 <td><button class="btn-acc btn-vetar" onclick="eliminarVisita(${v.ID_VISITA})">✕ Baja</button></td>
             </tr>`
         ).join('') || '<tr><td colspan="7">Sin registros</td></tr>';
+        refiltrar('#visitantes');
     } catch (e) { console.error('visitantes admin:', e); }
 }
 
@@ -370,6 +392,7 @@ async function cargarPaquetes() {
                 <td><button class="btn-acc btn-vetar" onclick="eliminarPaquete(${p.ID_PAQUETE})">✕ Baja</button></td>
             </tr>`
         ).join('') || '<tr><td colspan="6">Sin registros</td></tr>';
+        refiltrar('#paquetes');
     } catch (e) { console.error('paquetes admin:', e); }
 }
 
@@ -393,6 +416,7 @@ async function cargarFacturas() {
                 <td><button class="btn-acc btn-vetar" onclick="eliminarFactura(${f.ID_FACTURA})">✕ Anular</button></td>
             </tr>`
         ).join('') || '<tr><td colspan="7">Sin registros</td></tr>';
+        refiltrar('#facturas');
     } catch (e) { console.error('facturas:', e); }
 }
 
@@ -444,6 +468,7 @@ async function cargarServicios() {
                 </td>
             </tr>`
         ).join('') || '<tr><td colspan="6">Sin registros</td></tr>';
+        refiltrar('#servicios');
     } catch (e) { console.error('servicios:', e); }
 }
 
@@ -511,6 +536,7 @@ async function cargarEventos() {
                 </td>
             </tr>`
         ).join('') || '<tr><td colspan="5">Sin registros</td></tr>';
+        refiltrar('#eventos');
     } catch (e) { console.error('eventos:', e); }
 }
 
@@ -575,6 +601,7 @@ async function cargarVehiculos() {
                 <td><button class="btn-acc btn-vetar" onclick="eliminarVehiculo('${v.PLACA}')">✕ Baja</button></td>
             </tr>`
         ).join('') || '<tr><td colspan="5">Sin registros</td></tr>';
+        refiltrar('#vehiculos');
     } catch (e) { console.error('vehiculos:', e); }
 }
 
@@ -586,22 +613,26 @@ async function eliminarVehiculo(placa) {
 }
 
 async function cargarSelectsAdmin() {
+    const safe = async (accion) => { try { const d = await apiGet(accion); return Array.isArray(d) ? d : []; } catch { return []; } };
+
+    const [tiposPago, formasPago, tiposServicio, tiposEvento, estados, residencias, personas, trabajadores] =
+        await Promise.all([
+            safe('listar_tipos_pago'),
+            safe('listar_formas_pago'),
+            safe('listar_tipos_servicio'),
+            safe('listar_tipos_evento'),
+            safe('listar_estados'),
+            safe('listar_residencias'),
+            safe('listar_personas'),
+            safe('listar_trabajadores'),
+        ]);
+
     try {
-        const [tiposPago, formasPago, tiposServicio, tiposEvento, estados, residencias, personas, trabajadores] =
-            await Promise.all([
-                apiGet('listar_tipos_pago'),
-                apiGet('listar_formas_pago'),
-                apiGet('listar_tipos_servicio'),
-                apiGet('listar_tipos_evento'),
-                apiGet('listar_estados'),
-                apiGet('listar_residencias'),
-                apiGet('listar_personas'),
-                apiGet('listar_trabajadores'),
-            ]);
-
         const selEstG = document.querySelector('#guardias .bloque-formulario select');
-        if (selEstG) llenarSelect(selEstG, estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
+        llenarSelect(selEstG, filtrarEstados(estados, ESTADOS_POR_SECCION.guardias), 'ID_ESTADO', 'NOMBRE_ESTADO');
+    } catch (e) { console.error('selects guardias:', e); }
 
+    try {
         const selResRes = document.querySelector('#residentes .bloque-formulario select:nth-of-type(1)');
         if (selResRes) {
             selResRes.id = 'sel-residencia-residente';
@@ -612,30 +643,36 @@ async function cargarSelectsAdmin() {
             });
         }
         const selEstR = document.querySelector('#residentes .bloque-formulario select:nth-of-type(2)');
-        if (selEstR) llenarSelect(selEstR, estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
+        llenarSelect(selEstR, filtrarEstados(estados, ESTADOS_POR_SECCION.residentes), 'ID_ESTADO', 'NOMBRE_ESTADO');
+    } catch (e) { console.error('selects residentes:', e); }
 
+    try {
         const selTipoR = document.querySelector('#residencias .bloque-formulario select:nth-of-type(1)');
-        if (selTipoR) llenarSelect(selTipoR, tiposPago, 'ID_TIPO_PAGO', 'TIPO');
+        llenarSelect(selTipoR, tiposPago, 'ID_TIPO_PAGO', 'TIPO');
         const selEstRs = document.querySelector('#residencias .bloque-formulario select:nth-of-type(2)');
-        if (selEstRs) llenarSelect(selEstRs, estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
+        llenarSelect(selEstRs, filtrarEstados(estados, ESTADOS_POR_SECCION.residencias), 'ID_ESTADO', 'NOMBRE_ESTADO');
+    } catch (e) { console.error('selects residencias:', e); }
 
-        const fInputs = document.querySelectorAll('#facturas .bloque-formulario input');
+    try {
         const fSels = document.querySelectorAll('#facturas .bloque-formulario select');
-        if (fSels[0]) llenarSelect(fSels[0], personas, 'ID_PERSONA', 'NOMBRE_COMPLETO');
-        if (fSels[1]) llenarSelect(fSels[1], tiposPago, 'ID_TIPO_PAGO', 'TIPO');
-        if (fSels[2]) llenarSelect(fSels[2], formasPago, 'ID_FORMA_PAGO', 'FORMA');
-        if (fSels[3]) llenarSelect(fSels[3], estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
+        llenarSelect(fSels[0], personas, 'ID_PERSONA', 'NOMBRE_COMPLETO');
+        llenarSelect(fSels[1], tiposPago, 'ID_TIPO_PAGO', 'TIPO');
+        llenarSelect(fSels[2], formasPago, 'ID_FORMA_PAGO', 'FORMA');
+        llenarSelect(fSels[3], filtrarEstados(estados, ESTADOS_POR_SECCION.facturas), 'ID_ESTADO', 'NOMBRE_ESTADO');
+    } catch (e) { console.error('selects facturas:', e); }
 
+    try {
         const sSels = document.querySelectorAll('#servicios .bloque-formulario select');
-        if (sSels[0]) llenarSelect(sSels[0], tiposServicio, 'ID_TIPO_SERVICIO', 'TIPO_SERVICIO');
-        if (sSels[1]) llenarSelect(sSels[1], trabajadores, 'ID_PERSONA', 'NOMBRE_COMPLETO');
-        if (sSels[2]) llenarSelect(sSels[2], estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
+        llenarSelect(sSels[0], tiposServicio, 'ID_TIPO_SERVICIO', 'TIPO_SERVICIO');
+        llenarSelect(sSels[1], trabajadores, 'ID_PERSONA', 'NOMBRE_COMPLETO');
+        llenarSelect(sSels[2], filtrarEstados(estados, ESTADOS_POR_SECCION.servicios), 'ID_ESTADO', 'NOMBRE_ESTADO');
+    } catch (e) { console.error('selects servicios:', e); }
 
+    try {
         const eSels = document.querySelectorAll('#eventos .bloque-formulario select');
-        if (eSels[0]) llenarSelect(eSels[0], tiposEvento, 'ID_TIPO_EVENTO', 'TIPO_EVENTO');
-        if (eSels[1]) llenarSelect(eSels[1], estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
-
-    } catch (e) { console.error('selects admin:', e); }
+        llenarSelect(eSels[0], tiposEvento, 'ID_TIPO_EVENTO', 'TIPO_EVENTO');
+        llenarSelect(eSels[1], filtrarEstados(estados, ESTADOS_POR_SECCION.eventos), 'ID_ESTADO', 'NOMBRE_ESTADO');
+    } catch (e) { console.error('selects eventos:', e); }
 }
 
 function inyectarMensajes() {
@@ -714,7 +751,6 @@ async function cargarStatsFacturas() {
     } catch (e) { console.error('stats_facturas:', e); }
 }
 
-// ── Panel de estadísticas del módulo de Servicios ───────────────────────────
 async function cargarStatsServicios() {
     try {
         const stats = await apiGet('stats_servicios_tipo');
@@ -730,7 +766,6 @@ async function cargarStatsServicios() {
     } catch (e) { console.error('stats_servicios:', e); }
 }
 
-// ── Panel de estadísticas del módulo de Eventos ─────────────────────────────
 async function cargarStatsEventos() {
     try {
         const stats = await apiGet('stats_eventos_tipo');
@@ -749,8 +784,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     inyectarMensajes();
     asignarFormularios();
     await cargarSelectsAdmin();
-    await cargarResumen();          
-    await Promise.all([             
+    await cargarResumen();
+    await Promise.all([
         cargarGuardias(),
         cargarResidentes(),
         cargarResidencias(),
@@ -766,4 +801,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         cargarVehiculos(),
     ]);
     iniciarAutoRefresh();
+});
+
+function aplicarFiltro(input) {
+    const q = input.value.trim().toLowerCase();
+    const section = input.closest('.seccion');
+    const bloque = input.closest('.bloque-tabla');
+    const table = bloque
+        ? bloque.querySelector('table')
+        : section?.querySelector('table');
+    if (!table) return;
+    table.querySelectorAll('tbody tr').forEach(tr => {
+        tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+}
+
+function refiltrar(seccionId) {
+    const input = document.querySelector(`${seccionId} .buscador-tabla`);
+    if (input && input.value.trim()) aplicarFiltro(input);
+}
+
+document.addEventListener('input', e => {
+    if (e.target.matches('.buscador-tabla')) aplicarFiltro(e.target);
 });

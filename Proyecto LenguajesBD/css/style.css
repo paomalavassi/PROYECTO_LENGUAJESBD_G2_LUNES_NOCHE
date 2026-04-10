@@ -1,6 +1,21 @@
+:root {
+    --header-bg: #1E3D6B;
+    --btn-submit: #238666;
+    --card-stripe: #2d3b4b;
+    --bg: #F7F8FA;
+    --surface: #FFFFFF;
+    --border: #D6DAE6;
+    --text-primary: #1C2333;
+    --text-secondary: #5E6678;
+    --footer-bg: #ECEEF4;
+    --footer-text: #6B7180;
+    --error: #C0392B;
+    --success: #1A7A3A;
+}
+
 body {
-    background-color: #ffffff;
-    color: #3a3838;
+    background-color: var(--bg);
+    color: var(--text-primary);
     font-family: Arial, Helvetica, sans-serif;
     margin: 0;
     padding: 0;
@@ -8,9 +23,9 @@ body {
 
 header {
     text-align: center;
-    padding: 15px 0;
-    background-color: #9a6a30;
-    color: #ffffff;
+    padding: 18px 0;
+    background-color: var(--header-bg);
+    color: #fff;
 }
 
 header h1 {
@@ -19,27 +34,34 @@ header h1 {
 }
 
 header h2 {
-    margin: 5px 0 0 0;
-    font-size: 1.1em;
+    margin: 6px 0 0;
+    font-size: 1.05em;
     font-weight: normal;
+    opacity: .82;
 }
 
 footer {
     text-align: center;
     padding: 10px 0;
-    background-color: #d6d2d2;
-    color: #444343;
-    font-size: 0.9em;
+    background-color: var(--footer-bg);
+    color: var(--footer-text);
+    font-size: .9em;
     margin-top: 30px;
+    border-top: 1px solid var(--border);
 }
 
 .seccion-login {
     text-align: center;
-    padding: 40px 20px;
+    padding: 48px 20px 40px;
 }
 
 .seccion-login h2 {
-    margin-bottom: 5px;
+    margin-bottom: 4px;
+}
+
+.seccion-login>p {
+    color: var(--text-secondary);
+    margin-top: 0;
 }
 
 .contenedor-roles {
@@ -61,32 +83,36 @@ footer {
 }
 
 .card-login-unico select {
-    padding: 6px;
+    padding: 7px;
     margin-bottom: 10px;
-    border: 1px solid #a09e9e;
-    border-radius: 3px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
     width: 100%;
-    font-size: 0.95em;
+    font-size: .95em;
+    background: var(--surface);
 }
 
 .card-rol {
-    background-color: #ffffff;
-    border: 1px solid #a39f9f;
-    border-radius: 5px;
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--card-stripe);
+    border-radius: 8px;
     padding: 30px;
     width: 300px;
     text-align: left;
+    box-shadow: 0 2px 8px rgba(30, 61, 107, .09);
 }
 
 .card-rol h3 {
     text-align: center;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
+    color: var(--header-bg);
 }
 
 .card-rol p {
     text-align: center;
-    color: #6a6969;
-    font-size: 0.9em;
+    color: var(--text-secondary);
+    font-size: .88em;
     margin-bottom: 20px;
 }
 
@@ -96,41 +122,53 @@ footer {
 }
 
 .card-rol label {
-    font-size: 0.9em;
+    font-size: .88em;
     margin-top: 5px;
+    font-weight: bold;
 }
 
 .card-rol input[type="text"],
 .card-rol input[type="password"] {
-    padding: 6px;
+    padding: 7px;
     margin-bottom: 10px;
-    border: 1px solid #a09e9e;
-    border-radius: 3px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
     width: 100%;
+    font-size: .93em;
+    background: var(--bg);
+    transition: border-color .2s;
+}
+
+.card-rol input:focus {
+    outline: none;
+    border-color: var(--header-bg);
+    background: var(--surface);
 }
 
 .card-rol button {
-    padding: 8px;
-    background-color: #9a6a30;
-    color: #ffffff;
+    padding: 9px;
+    background-color: var(--btn-submit);
+    color: #fff;
     border: none;
-    border-radius: 3px;
+    border-radius: 4px;
     cursor: pointer;
-    margin-top: 5px;
+    margin-top: 6px;
+    font-weight: bold;
+    transition: background-color .2s;
 }
 
 .card-rol button:hover {
-    background-color: #9a6a30;
+    background-color: #124D40;
 }
 
 .mensaje-error {
-    color: rgb(194, 28, 28);
-    font-size: 0.85em;
+    color: var(--error);
+    font-size: .85em;
     display: none;
 }
 
 .mensaje-exito {
-    color: rgb(27, 131, 27);
-    font-size: 0.85em;
+    color: var(--success);
+    font-size: .85em;
     display: none;
 }

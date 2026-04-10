@@ -58,6 +58,7 @@
 
         <section id="turnos" class="seccion">
             <h2>Mis Turnos y Horarios</h2>
+            <input type="text" class="buscador-tabla" placeholder="🔍 Buscar en tabla...">
             <table>
                 <thead><tr><th>Guardia</th><th>Fecha</th><th>Horario</th><th>Estado</th></tr></thead>
                 <tbody></tbody>
@@ -68,6 +69,7 @@
             <h2>Visitantes</h2>
             <div class="contenedor-principal">
                 <div class="bloque-tabla">
+                    <input type="text" class="buscador-tabla" placeholder="🔍 Buscar en tabla...">
                     <table>
                         <thead>
                             <tr>
@@ -110,6 +112,7 @@
             <h2>Paquetes</h2>
             <div class="contenedor-principal">
                 <div class="bloque-tabla">
+                    <input type="text" class="buscador-tabla" placeholder="🔍 Buscar en tabla...">
                     <table>
                         <thead>
                             <tr>
@@ -140,22 +143,18 @@
             </div>
         </section>
 
-        <!-- ═══════════════════════════════════════════════════════
-             VEHÍCULOS — dos sub-tabs: Residentes | Visitas
-             ═══════════════════════════════════════════════════════ -->
         <section id="vehiculos" class="seccion">
             <h2>Vehiculos</h2>
 
-            <!-- Tabs -->
             <div class="tabs-seccion">
                 <button class="tab-btn activo" onclick="cambiarTabVehiculos('residentes')">🏠 Vehiculos de Residentes</button>
                 <button class="tab-btn"        onclick="cambiarTabVehiculos('visitas')">👤 Vehiculos de Visitas</button>
             </div>
 
-            <!-- TAB: Residentes -->
             <div id="tab-veh-residentes" class="tab-contenido activo">
                 <div class="contenedor-principal">
                     <div class="bloque-tabla">
+                        <input type="text" class="buscador-tabla" placeholder="🔍 Buscar en tabla..." data-tabla="tabla-veh-residentes">
                         <table id="tabla-veh-residentes">
                             <thead>
                                 <tr>
@@ -188,11 +187,10 @@
                 </div>
             </div>
 
-            <!-- TAB: Visitas -->
             <div id="tab-veh-visitas" class="tab-contenido">
-                <p class="nota-seccion">Registre aqui los vehiculos de visitantes temporales.</p>
                 <div class="contenedor-principal">
                     <div class="bloque-tabla">
+                        <input type="text" class="buscador-tabla" placeholder="🔍 Buscar en tabla..." data-tabla="tabla-veh-visitas">
                         <table id="tabla-veh-visitas">
                             <thead>
                                 <tr>
@@ -230,6 +228,7 @@
             <h2>Eventos / Incidentes</h2>
             <div class="contenedor-principal">
                 <div class="bloque-tabla">
+                    <input type="text" class="buscador-tabla" placeholder="🔍 Buscar en tabla...">
                     <table>
                         <thead>
                             <tr>
@@ -264,9 +263,9 @@
 
         <section id="espacios" class="seccion">
             <h2>Espacios del Condominio</h2>
-            <p class="nota-seccion">Gestion de los tipos de espacios: parqueos, salones, areas comunes, etc.</p>
             <div class="contenedor-principal">
                 <div class="bloque-tabla">
+                    <input type="text" class="buscador-tabla" placeholder="🔍 Buscar en tabla...">
                     <table>
                         <thead>
                             <tr>
@@ -295,7 +294,7 @@
 
         <section id="residentes" class="seccion">
             <h2>Residentes</h2>
-            <p class="nota-seccion">Vista de consulta. Para modificar datos contacte al administrador.</p>
+            <input type="text" class="buscador-tabla" placeholder="🔍 Buscar en tabla...">
             <table>
                 <thead>
                     <tr>
@@ -309,11 +308,11 @@
 
         <section id="residencias" class="seccion">
             <h2>Residencias</h2>
-            <p class="nota-seccion">Vista de consulta. Para modificar datos contacte al administrador.</p>
+            <input type="text" class="buscador-tabla" placeholder="🔍 Buscar en tabla...">
             <table>
                 <thead>
                     <tr>
-                        <th>ID</th><th>Monto Alquiler</th><th>Monto Mantenimiento</th>
+                        <th>Número de casa</th><th>Monto Alquiler</th><th>Monto Mantenimiento</th>
                         <th>Tipo de Pago</th><th>Estado</th>
                     </tr>
                 </thead>
