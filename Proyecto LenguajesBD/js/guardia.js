@@ -38,14 +38,12 @@ function llenarSelect(sel, items, val, txt) {
     });
 }
 
-// Guardias NO pueden poner Inactivo (ID 2)
-// IDs por sección — sin ID 2 para guardia
 const ESTADOS_GUARDIA_SECCION = {
-    visitantes: [4, 5],         // Adentro, Afuera
-    paquetes:   [16, 3],        // Entregado, Pendiente
-    vehiculos:  [4, 5, 6],      // Adentro, Afuera, Vetado
-    eventos:    [12, 13, 14],   // Programado, En proceso, Resuelto
-    espacios:   [9, 10, 7, 8],  // Reservado, Libre, En mantenimiento, Ocupado
+    visitantes: [4, 5],
+    paquetes:   [16, 3],
+    vehiculos:  [4, 5, 6],
+    eventos:    [12, 13, 14],
+    espacios:   [9, 10, 7, 8],
 };
 
 function filtrarEstados(todos, ids) {
@@ -115,7 +113,7 @@ async function cargarVisitantes() {
                 <td>${v.FECHA_SALIDA ?? '--'}</td>
                 <td>${estadoBadge(v.NOMBRE_ESTADO)}</td>
                 <td class="acciones-celda">
-                    <button class="btn-acc btn-adentro" onclick="cambiarEstadoVisita(${v.ID_VISITA},4)" title="Registrar ingreso">↓ Adentro</button>
+                    <button class="btn-acc btn-adentro" onclick="cambiarEstadoVisita(${v.ID_VISITA},4)" title="Registrar ingreso">↓ Dentro</button>
                     <button class="btn-acc btn-salida"  onclick="cambiarEstadoVisita(${v.ID_VISITA},5)" title="Registrar salida">↑ Salida</button>
                     <button class="btn-acc btn-vetar"   onclick="cambiarEstadoVisita(${v.ID_VISITA},6)" title="Vetar visitante">✕ Vetar</button>
                     <button class="btn-acc btn-editar"  onclick="editarVisita(${v.ID_VISITA},'${(v.VISITANTE||'').replace(/'/g,"\\'")}',${v.ID_RESIDENCIA??0},${v.ROL_ID??0},'${v.FECHA_INGRESO??''}','${v.FECHA_SALIDA??''}',${v.ID_ESTADO??4})">✎ Editar</button>
@@ -221,7 +219,7 @@ async function cargarPaquetes() {
                 <td>${p.FECHA_SALIDA ?? 'Pendiente'}</td>
                 <td>${estadoBadge(p.NOMBRE_ESTADO)}</td>
                 <td class="acciones-celda">
-                    <button class="btn-acc btn-adentro" onclick="marcarEntregado(${p.ID_PAQUETE})">✔ Entregado</button>
+                    <button class="btn-acc btn-adentro" onclick="marcarEntregado(${p.ID_PAQUETE})">✔ Dado</button>
                 </td>
             </tr>`
         ).join('') || '<tr><td colspan="6">Sin paquetes</td></tr>';
@@ -272,8 +270,8 @@ async function cargarVehiculosResidentes() {
                 <td>${v.RESIDENTE}</td>
                 <td>${estadoBadge(v.NOMBRE_ESTADO)}</td>
                 <td class="acciones-celda">
-                    <button class="btn-acc btn-adentro" onclick="cambiarEstadoVehiculo('${v.PLACA}',4)">↓ Adentro</button>
-                    <button class="btn-acc btn-salida"  onclick="cambiarEstadoVehiculo('${v.PLACA}',5)">↑ Afuera</button>
+                    <button class="btn-acc btn-adentro" onclick="cambiarEstadoVehiculo('${v.PLACA}',4)">↓ Dentro</button>
+                    <button class="btn-acc btn-salida"  onclick="cambiarEstadoVehiculo('${v.PLACA}',5)">↑ Fuera</button>
                     <button class="btn-acc btn-vetar"   onclick="cambiarEstadoVehiculo('${v.PLACA}',6)">✕ Vetar</button>
                     <button class="btn-acc btn-editar"  onclick="editarVehiculoResidente('${v.PLACA}','${(v.DESCRIPCION||'').replace(/'/g,"\\'")}',${v.ID_PERSONA??0},${v.ID_ESTADO??1})">✎ Editar</button>
                 </td>
@@ -373,8 +371,8 @@ async function cargarVehiculosVisitas() {
                 <td>${v.VISITANTE}</td>
                 <td>${estadoBadge(v.NOMBRE_ESTADO)}</td>
                 <td class="acciones-celda">
-                    <button class="btn-acc btn-adentro" onclick="cambiarEstadoVehiculo('${v.PLACA}',4)">↓ Adentro</button>
-                    <button class="btn-acc btn-salida"  onclick="cambiarEstadoVehiculo('${v.PLACA}',5)">↑ Afuera</button>
+                    <button class="btn-acc btn-adentro" onclick="cambiarEstadoVehiculo('${v.PLACA}',4)">↓ Dentro</button>
+                    <button class="btn-acc btn-salida"  onclick="cambiarEstadoVehiculo('${v.PLACA}',5)">↑ Fuera</button>
                     <button class="btn-acc btn-vetar"   onclick="cambiarEstadoVehiculo('${v.PLACA}',6)">✕ Vetar</button>
                 </td>
             </tr>`
@@ -430,7 +428,7 @@ async function cargarEventos() {
 
         const btnProg  = idProg  ? `<button class="btn-acc btn-prog"     onclick="cambiarEstadoEvento(${'{ev.ID_EVENTO}'},${idProg})"  title="Programado">📋 Prog.</button>` : '';
         const btnProc  = idProc  ? `<button class="btn-acc btn-proceso"  onclick="cambiarEstadoEvento(${'{ev.ID_EVENTO}'},${idProc})"  title="En Proceso">⚙ Proceso</button>` : '';
-        const btnRes   = idRes   ? `<button class="btn-acc btn-resuelto" onclick="cambiarEstadoEvento(${'{ev.ID_EVENTO}'},${idRes})"   title="Resuelto">✓ Resuelto</button>` : '';
+        const btnRes   = idRes   ? `<button class="btn-acc btn-resuelto" onclick="cambiarEstadoEvento(${'{ev.ID_EVENTO}'},${idRes})"   title="Resuelto">✓ Solucionado</button>` : '';
         const btnFinal = idFinal ? `<button class="btn-acc btn-final"    onclick="cambiarEstadoEvento(${'{ev.ID_EVENTO}'},${idFinal})" title="Finalizado">⬛ Final</button>` : '';
 
         tb.innerHTML = data.map(ev => `
@@ -442,7 +440,7 @@ async function cargarEventos() {
                 <td class="acciones-celda">
                     ${idProg  ? `<button class="btn-acc btn-prog"     onclick="cambiarEstadoEvento(${ev.ID_EVENTO},${idProg})"  title="Programado">📋 Prog.</button>` : ''}
                     ${idProc  ? `<button class="btn-acc btn-proceso"  onclick="cambiarEstadoEvento(${ev.ID_EVENTO},${idProc})"  title="En Proceso">⚙ Proceso</button>` : ''}
-                    ${idRes   ? `<button class="btn-acc btn-resuelto" onclick="cambiarEstadoEvento(${ev.ID_EVENTO},${idRes})"   title="Resuelto">✓ Resuelto</button>` : ''}
+                    ${idRes   ? `<button class="btn-acc btn-resuelto" onclick="cambiarEstadoEvento(${ev.ID_EVENTO},${idRes})"   title="Resuelto">✓ Solucionado</button>` : ''}
                     ${idFinal ? `<button class="btn-acc btn-final"    onclick="cambiarEstadoEvento(${ev.ID_EVENTO},${idFinal})" title="Finalizado">⬛ Final</button>` : ''}
                     <button class="btn-acc btn-editar" onclick="editarEvento(${ev.ID_EVENTO},'${(ev.DESCR_EVENTO||'').replace(/'/g,"\\'")}',${ev.ID_TIPO_EVENTO??1},'${ev.FECHA_EVENTO??''}',${ev.ID_ESTADO??1})">✎ Editar</button>
                 </td>
