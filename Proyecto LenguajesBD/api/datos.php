@@ -14,15 +14,14 @@ require_once '../config/bd.php';
 $accion = $_REQUEST['accion'] ?? '';
 $conn   = getConnection();
 
-function nextId(string $tabla, string $col, $conn): int {
-    $sql  = "SELECT NVL(MAX($col), 0) + 1 AS NXT FROM $tabla";
-    $stmt = oci_parse($conn, $sql);
-    oci_execute($stmt);
-    $row  = oci_fetch_assoc($stmt);
-    return (int)($row['NXT'] ?? 1);
+function currVal(string $seq, $conn): int
+{
+    $rows = fetchAll($conn, "SELECT $seq.CURRVAL AS ID FROM DUAL");
+    return (int)($rows[0]['ID'] ?? 0);
 }
 
-function execProc($conn, string $sql, array $binds): array {
+function execProc($conn, string $sql, array $binds): array
+{
     $stmt = oci_parse($conn, $sql);
     if (!$stmt) {
         $e = oci_error($conn);
@@ -41,7 +40,8 @@ function execProc($conn, string $sql, array $binds): array {
     return ['ok' => true];
 }
 
-function fetchAll($conn, string $sql, array $binds = []): array {
+function fetchAll($conn, string $sql, array $binds = []): array
+{
     $stmt = oci_parse($conn, $sql);
     if (!$stmt) return [];
     foreach ($binds as $name => &$val) {
@@ -58,17 +58,22 @@ function fetchAll($conn, string $sql, array $binds = []): array {
     return $rows;
 }
 
-function jsonOut($data): void {
+function jsonOut($data): void
+{
     echo json_encode($data, JSON_UNESCAPED_UNICODE);
 }
 
-function execUpdate($conn, string $sql, array $binds): array {
+function execUpdate($conn, string $sql, array $binds): array
+{
     $stmt = oci_parse($conn, $sql);
-    if (!$stmt) { $e = oci_error($conn); return ['error'=>true,'mensaje'=>$e['message']]; }
+    if (!$stmt) {
+        $e = oci_error($conn);
+        return ['error' => true, 'mensaje' => $e['message']];
+    }
     foreach ($binds as $k => &$v) oci_bind_by_name($stmt, $k, $v);
     unset($v);
     $ok = oci_execute($stmt, OCI_COMMIT_ON_SUCCESS);
-    $result = $ok ? ['ok'=>true] : ['error'=>true,'mensaje'=>oci_error($stmt)['message']];
+    $result = $ok ? ['ok' => true] : ['error' => true, 'mensaje' => oci_error($stmt)['message']];
     oci_free_statement($stmt);
     return $result;
 }
@@ -87,7 +92,8 @@ switch ($accion) {
             break;
         }
 
-        $rows = fetchAll($conn,
+        $rows = fetchAll(
+            $conn,
             "SELECT ID_PERSONA, NOMBRE, APELLIDO_PATERNO, ROL
              FROM   FIDE_CREDENCIALES_LOGIN_V
              WHERE  USUARIO    = :usr
@@ -121,11 +127,12 @@ switch ($accion) {
         break;
 
     case 'listar_guardias':
-        $rows = fetchAll($conn,
+        $rows = fetchAll(
+            $conn,
             "SELECT p.ID_PERSONA, p.NOMBRE, p.APELLIDO_PATERNO, p.APELLIDO_MATERNO,
                     p.USUARIO,
-                    (SELECT TELEFONO FROM FIDE_TELEFONOS_TB WHERE ID_PERSONA = p.ID_PERSONA AND ROWNUM=1) AS TELEFONO,
-                    (SELECT CORREO   FROM FIDE_CORREOS_TB   WHERE ID_PERSONA = p.ID_PERSONA AND ROWNUM=1) AS CORREO,
+                    (SELECT TELEFONO FROM FIDE_TELEFONOS_PERSONA_V WHERE ID_PERSONA = p.ID_PERSONA AND ROWNUM=1) AS TELEFONO,
+                    (SELECT CORREO   FROM FIDE_CORREOS_PERSONA_V   WHERE ID_PERSONA = p.ID_PERSONA AND ROWNUM=1) AS CORREO,
                     e.ID_ESTADO, e.NOMBRE_ESTADO,
                     $pkg.FIDE_TOTAL_TURNOS_GUARDIA_FN(p.ID_PERSONA)    AS TOTAL_TURNOS,
                     $pkg.FIDE_TOTAL_REPORTES_PERSONA_FN(p.ID_PERSONA)  AS TOTAL_REPORTES
@@ -136,10 +143,11 @@ switch ($accion) {
         break;
 
     case 'listar_residentes':
-        $rows = fetchAll($conn,
+        $rows = fetchAll(
+            $conn,
             "SELECT p.ID_PERSONA, p.NOMBRE, p.APELLIDO_PATERNO, p.APELLIDO_MATERNO,
-                    (SELECT TELEFONO FROM FIDE_TELEFONOS_TB WHERE ID_PERSONA = p.ID_PERSONA AND ROWNUM=1) AS TELEFONO,
-                    (SELECT CORREO   FROM FIDE_CORREOS_TB   WHERE ID_PERSONA = p.ID_PERSONA AND ROWNUM=1) AS CORREO,
+                    (SELECT TELEFONO FROM FIDE_TELEFONOS_PERSONA_V WHERE ID_PERSONA = p.ID_PERSONA AND ROWNUM=1) AS TELEFONO,
+                    (SELECT CORREO   FROM FIDE_CORREOS_PERSONA_V   WHERE ID_PERSONA = p.ID_PERSONA AND ROWNUM=1) AS CORREO,
                     p.ID_RESIDENCIA, p.ID_ESTADO, p.NOMBRE_ESTADO,
                     $pkg.FIDE_TOTAL_FACTURAS_PERSONA_FN(p.ID_PERSONA)     AS TOTAL_FACTURAS,
                     $pkg.FIDE_MONTO_FACTURADO_PERSONA_FN(p.ID_PERSONA)    AS FACTURAS_ACTIVAS,
@@ -150,16 +158,29 @@ switch ($accion) {
         jsonOut($rows);
         break;
 
+    case 'listar_personas':
+        $rows = fetchAll(
+            $conn,
+            "SELECT ID_PERSONA,
+                    NOMBRE || ' ' || APELLIDO_PATERNO || ' ' || APELLIDO_MATERNO AS NOMBRE_COMPLETO
+             FROM   FIDE_PERSONAS_DETALLE_V
+             ORDER  BY NOMBRE, APELLIDO_PATERNO"
+        );
+        jsonOut($rows);
+        break;
+
     case 'listar_trabajadores':
-        $rows = fetchAll($conn,
+        $rows = fetchAll(
+            $conn,
             "SELECT ID_PERSONA, NOMBRE_COMPLETO
              FROM   FIDE_LISTAR_TRABAJADORES_V"
         );
         jsonOut($rows);
         break;
 
-   case 'listar_residencias':
-        $rows = fetchAll($conn,
+    case 'listar_residencias':
+        $rows = fetchAll(
+            $conn,
             "SELECT ID_RESIDENCIA, MONTO_ALQUILER, MONTO_MANTENIMIENTO,
                     TIPO_PAGO, ID_TIPO_PAGO, ID_ESTADO, NOMBRE_ESTADO,
                     $pkg.FIDE_TOTAL_RESIDENTES_RESIDENCIA_FN(ID_RESIDENCIA) AS TOTAL_RESIDENTES,
@@ -171,7 +192,8 @@ switch ($accion) {
         break;
 
     case 'listar_visitas':
-        $rows = fetchAll($conn,
+        $rows = fetchAll(
+            $conn,
             "SELECT ID_VISITA, VISITANTE, ID_PERSONA, ROL_ID, ROL,
                     ID_RESIDENCIA, FECHA_INGRESO, FECHA_SALIDA,
                     ID_ESTADO, NOMBRE_ESTADO
@@ -181,7 +203,8 @@ switch ($accion) {
         break;
 
     case 'listar_paquetes':
-        $rows = fetchAll($conn,
+        $rows = fetchAll(
+            $conn,
             "SELECT ID_PAQUETE, PERSONA, ID_PERSONA, ID_RESIDENCIA,
                     FECHA_INGRESO, FECHA_SALIDA, ID_ESTADO, NOMBRE_ESTADO
              FROM   FIDE_LISTAR_PAQUETES_V"
@@ -190,7 +213,8 @@ switch ($accion) {
         break;
 
     case 'listar_facturas':
-        $rows = fetchAll($conn,
+        $rows = fetchAll(
+            $conn,
             "SELECT ID_FACTURA, FECHA_FACTURA, DESCR_FACTURA,
                     PERSONA, TIPO_PAGO, FORMA_PAGO, NOMBRE_ESTADO
              FROM   FIDE_LISTAR_FACTURAS_V"
@@ -199,7 +223,8 @@ switch ($accion) {
         break;
 
     case 'listar_servicios':
-        $rows = fetchAll($conn,
+        $rows = fetchAll(
+            $conn,
             "SELECT ID_SERVICIO, DESCR_SERVICIO, FECHA_SALIDA,
                     ID_TIPO_SERVICIO, TIPO_SERVICIO, ID_TIPO_EVENTO,
                     ID_ESTADO, NOMBRE_ESTADO, PERSONAS
@@ -209,7 +234,8 @@ switch ($accion) {
         break;
 
     case 'listar_eventos':
-        $rows = fetchAll($conn,
+        $rows = fetchAll(
+            $conn,
             "SELECT ID_EVENTO, DESCR_EVENTO, FECHA_EVENTO,
                     ID_TIPO_EVENTO, TIPO_EVENTO, ID_TIPO_ESPACIO,
                     ID_ESTADO, NOMBRE_ESTADO
@@ -219,7 +245,8 @@ switch ($accion) {
         break;
 
     case 'listar_vehiculos':
-        $rows = fetchAll($conn,
+        $rows = fetchAll(
+            $conn,
             "SELECT PLACA, DESCRIPCION, RESIDENTE,
                     ID_PERSONA, ID_TIPO_ESPACIO, ID_ESTADO, NOMBRE_ESTADO
              FROM   FIDE_LISTAR_VEHICULOS_V"
@@ -228,32 +255,35 @@ switch ($accion) {
         break;
 
     case 'listar_vehiculos_residentes':
-        $rows = fetchAll($conn,
+        $rows = fetchAll(
+            $conn,
             "SELECT v.PLACA, v.DESCRIPCION, v.RESIDENTE,
                     v.ID_PERSONA, v.ID_TIPO_ESPACIO, v.ID_ESTADO, v.NOMBRE_ESTADO
              FROM   FIDE_LISTAR_VEHICULOS_V v
-             JOIN   FIDE_PERSONAS_TB p ON p.ID_PERSONA = v.ID_PERSONA
-             JOIN   FIDE_ROLES_TB    r ON r.ID_ROL     = p.ID_ROL
+             JOIN   FIDE_PERSONAS_DETALLE_V p ON p.ID_PERSONA = v.ID_PERSONA
+             JOIN   FIDE_LISTAR_ROLES_V    r ON r.ID_ROL     = p.ID_ROL
              WHERE  UPPER(r.ROL) LIKE '%RESID%'"
         );
         jsonOut($rows);
         break;
 
     case 'listar_vehiculos_visitas':
-        $rows = fetchAll($conn,
+        $rows = fetchAll(
+            $conn,
             "SELECT v.PLACA, v.DESCRIPCION,
                     p.NOMBRE || ' ' || p.APELLIDO_PATERNO AS VISITANTE,
                     v.ID_PERSONA, v.ID_TIPO_ESPACIO, v.ID_ESTADO, v.NOMBRE_ESTADO
              FROM   FIDE_LISTAR_VEHICULOS_V v
-             JOIN   FIDE_PERSONAS_TB p ON p.ID_PERSONA = v.ID_PERSONA
-             JOIN   FIDE_ROLES_TB    r ON r.ID_ROL     = p.ID_ROL
+             JOIN   FIDE_PERSONAS_DETALLE_V p ON p.ID_PERSONA = v.ID_PERSONA
+             JOIN   FIDE_LISTAR_ROLES_V    r ON r.ID_ROL     = p.ID_ROL
              WHERE  UPPER(r.ROL) LIKE '%VISIT%'"
         );
         jsonOut($rows);
         break;
 
     case 'listar_espacios':
-        $rows = fetchAll($conn,
+        $rows = fetchAll(
+            $conn,
             "SELECT ID_TIPO_ESPACIO, NOMBRE_ESPACIO, DESCR_ESPACIO,
                     ID_ESTADO, NOMBRE_ESTADO
              FROM   FIDE_LISTAR_ESPACIOS_V"
@@ -265,12 +295,13 @@ switch ($accion) {
         $nombre   = $_POST['nombre_espacio'] ?? '';
         $descr    = $_POST['descr_espacio']  ?? '';
         $idEstado = (int)($_POST['id_estado'] ?? 1);
-        $id = nextId('FIDE_TIPOS_ESPACIOS_TB', 'ID_TIPO_ESPACIO', $conn);
-        $r  = execProc($conn,
-            "BEGIN $pkg.FIDE_TIPOS_ESPACIOS_INSERTAR_SP(:p1,:p2,:p3,:p4); END;",
-            [':p1'=>$id,':p2'=>$nombre,':p3'=>$descr,':p4'=>$idEstado]
+        $r  = execProc(
+            $conn,
+            "BEGIN $pkg.FIDE_TIPOS_ESPACIOS_INSERTAR_SP(:p1,:p2,:p3); END;",
+            [':p1' => $nombre, ':p2' => $descr, ':p3' => $idEstado]
         );
-        jsonOut(($r['error'] ?? false) ? $r : ['ok'=>true,'id'=>$id]);
+        $id = currVal('FIDE_TIPOS_ESPACIOS_SEQ', $conn);
+        jsonOut(($r['error'] ?? false) ? $r : ['ok' => true, 'id' => $id]);
         break;
 
     case 'actualizar_espacio':
@@ -278,175 +309,188 @@ switch ($accion) {
         $nombre   = $_POST['nombre_espacio']      ?? '';
         $descr    = $_POST['descr_espacio']       ?? '';
         $idEstado = (int)($_POST['id_estado']     ?? 1);
-        $r = execProc($conn,
+        $r = execProc(
+            $conn,
             "BEGIN $pkg.FIDE_TIPOS_ESPACIOS_ACTUALIZAR_SP(:p1,:p2,:p3,:p4); END;",
-            [':p1'=>$id,':p2'=>$nombre,':p3'=>$descr,':p4'=>$idEstado]
+            [':p1' => $id, ':p2' => $nombre, ':p3' => $descr, ':p4' => $idEstado]
         );
         jsonOut($r);
         break;
 
     case 'eliminar_espacio':
         $id = (int)($_REQUEST['id'] ?? 0);
-        $r  = execProc($conn, "BEGIN $pkg.FIDE_TIPOS_ESPACIOS_ELIMINAR_SP(:p1); END;", [':p1'=>$id]);
+        $r  = execProc($conn, "BEGIN $pkg.FIDE_TIPOS_ESPACIOS_ELIMINAR_SP(:p1); END;", [':p1' => $id]);
         jsonOut($r);
         break;
 
- case 'actualizar_estado_visita':
-    $id  = (int)($_POST['id']     ?? 0);
-    $est = (int)($_POST['estado'] ?? 0);
+    case 'actualizar_estado_visita':
+        $id  = (int)($_POST['id']     ?? 0);
+        $est = (int)($_POST['estado'] ?? 0);
 
-    if (!in_array($est, [4, 5, 6])) {
-        jsonOut(['error' => true, 'mensaje' => 'Estado no permitido para visita.']);
-        break;
-    }
+        if (!in_array($est, [4, 5, 6])) {
+            jsonOut(['error' => true, 'mensaje' => 'Estado no permitido para visita.']);
+            break;
+        }
 
-    $cur = fetchAll($conn,
-        "SELECT ID_PERSONA, FECHA_INGRESO, FECHA_SALIDA, ID_RESIDENCIA, ROL_ID
+        $cur = fetchAll(
+            $conn,
+            "SELECT ID_PERSONA, FECHA_INGRESO, FECHA_SALIDA, ID_RESIDENCIA, ROL_ID
          FROM FIDE_LISTAR_VISITAS_V WHERE ID_VISITA = :id",
-        [':id' => $id]
-    );
+            [':id' => $id]
+        );
 
-    if (empty($cur)) {
-        jsonOut(['error' => true, 'mensaje' => 'Visita no encontrada.']);
-        break;
-    }
+        if (empty($cur)) {
+            jsonOut(['error' => true, 'mensaje' => 'Visita no encontrada.']);
+            break;
+        }
 
-    $fechaSalida = match($est) {
-        4       => null,
-        5       => date('d/m/Y H:i'),   // ← formato DD/MM/YYYY HH24:MI
-        default => $cur[0]['FECHA_SALIDA']
-    };
+        $fechaSalida = match ($est) {
+            4       => null,
+            5       => date('d/m/Y H:i'), // ← formato DD/MM/YYYY HH24:MI
+            default => $cur[0]['FECHA_SALIDA']
+        };
 
-    $sqlFecha = $fechaSalida
-        ? "TO_DATE(:p4,'DD/MM/YYYY HH24:MI')"
-        : "NULL";
+        $sqlFecha = $fechaSalida
+            ? "TO_DATE(:p4,'DD/MM/YYYY HH24:MI')"
+            : "NULL";
 
-    $sql = "BEGIN $pkg.FIDE_VISITAS_ACTUALIZAR_SP(
+        $sql = "BEGIN $pkg.FIDE_VISITAS_ACTUALIZAR_SP(
                 :p1, :p2,
                 TO_DATE(:p3,'DD/MM/YYYY HH24:MI'),
                 $sqlFecha,
                 :p5, :p6, :p7
             ); END;";
 
-    $binds = [
-        ':p1' => $id,
-        ':p2' => $cur[0]['ID_PERSONA'],
-        ':p3' => $cur[0]['FECHA_INGRESO'],
-        ':p5' => $cur[0]['ID_RESIDENCIA'],
-        ':p6' => $cur[0]['ROL_ID'],
-        ':p7' => $est,
-    ];
+        $binds = [
+            ':p1' => $id,
+            ':p2' => $cur[0]['ID_PERSONA'],
+            ':p3' => $cur[0]['FECHA_INGRESO'],
+            ':p5' => $cur[0]['ID_RESIDENCIA'],
+            ':p6' => $cur[0]['ROL_ID'],
+            ':p7' => $est,
+        ];
 
-    if ($fechaSalida) {
-        $binds[':p4'] = $fechaSalida;
-    }
+        if ($fechaSalida) {
+            $binds[':p4'] = $fechaSalida;
+        }
 
-    $r = execProc($conn, $sql, $binds);
-    jsonOut($r);
-    break;
-
-case 'actualizar_estado_vehiculo':
-    $placa = strtoupper(trim($_REQUEST['placa'] ?? ''));
-    $est   = (int)($_REQUEST['estado'] ?? 0);
-    if (!in_array($est, [4, 5, 6])) {
-        jsonOut(['error'=>true,'mensaje'=>'Estado no permitido para vehículo.']);
+        $r = execProc($conn, $sql, $binds);
+        jsonOut($r);
         break;
-    }
-  
-    $cur = fetchAll($conn,
-        "SELECT DESCRIPCION, ID_TIPO_ESPACIO, ID_PERSONA
+
+    case 'actualizar_estado_vehiculo':
+        $placa = strtoupper(trim($_REQUEST['placa'] ?? ''));
+        $est   = (int)($_REQUEST['estado'] ?? 0);
+        if (!in_array($est, [4, 5, 6])) {
+            jsonOut(['error' => true, 'mensaje' => 'Estado no permitido para vehículo.']);
+            break;
+        }
+
+        $cur = fetchAll(
+            $conn,
+            "SELECT DESCRIPCION, ID_TIPO_ESPACIO, ID_PERSONA
          FROM FIDE_LISTAR_VEHICULOS_V WHERE PLACA = :placa",
-        [':placa'=>$placa]
-    );
-    if (empty($cur)) { jsonOut(['error'=>true,'mensaje'=>'Vehículo no encontrado.']); break; }
-    jsonOut(execProc($conn,
-        "BEGIN $pkg.FIDE_VEHICULOS_ACTUALIZAR_SP(:p1,:p2,:p3,:p4,:p5); END;",
-        [':p1'=>$placa,':p2'=>$cur[0]['DESCRIPCION'],':p3'=>$cur[0]['ID_TIPO_ESPACIO'],':p4'=>$cur[0]['ID_PERSONA'],':p5'=>$est]
-    ));
-    break;
-
-case 'actualizar_estado_evento':
-    $id  = (int)($_POST['id']     ?? 0);
-    $est = (int)($_POST['estado'] ?? 0);
-
-    if (!in_array($est, [12, 13, 14, 17])) {
-        jsonOut(['error' => true, 'mensaje' => 'Estado no permitido para evento.']);
+            [':placa' => $placa]
+        );
+        if (empty($cur)) {
+            jsonOut(['error' => true, 'mensaje' => 'Vehículo no encontrado.']);
+            break;
+        }
+        jsonOut(execProc(
+            $conn,
+            "BEGIN $pkg.FIDE_VEHICULOS_ACTUALIZAR_SP(:p1,:p2,:p3,:p4,:p5); END;",
+            [':p1' => $placa, ':p2' => $cur[0]['DESCRIPCION'], ':p3' => $cur[0]['ID_TIPO_ESPACIO'], ':p4' => $cur[0]['ID_PERSONA'], ':p5' => $est]
+        ));
         break;
-    }
 
-    $cur = fetchAll($conn,
-        "SELECT ID_EVENTO, DESCR_EVENTO, FECHA_EVENTO, ID_TIPO_EVENTO, ID_TIPO_ESPACIO
+    case 'actualizar_estado_evento':
+        $id  = (int)($_POST['id']     ?? 0);
+        $est = (int)($_POST['estado'] ?? 0);
+
+        if (!in_array($est, [12, 13, 14, 17])) {
+            jsonOut(['error' => true, 'mensaje' => 'Estado no permitido para evento.']);
+            break;
+        }
+
+        $cur = fetchAll(
+            $conn,
+            "SELECT ID_EVENTO, DESCR_EVENTO, FECHA_EVENTO, ID_TIPO_EVENTO, ID_TIPO_ESPACIO
          FROM FIDE_LISTAR_EVENTOS_V WHERE ID_EVENTO = :id",
-        [':id' => $id]
-    );
+            [':id' => $id]
+        );
 
-    if (empty($cur)) {
-        jsonOut(['error' => true, 'mensaje' => 'Evento no encontrado.']);
-        break;
-    }
+        if (empty($cur)) {
+            jsonOut(['error' => true, 'mensaje' => 'Evento no encontrado.']);
+            break;
+        }
 
-    $r = execProc($conn,
-        "BEGIN $pkg.FIDE_EVENTOS_ACTUALIZAR_SP(
+        $r = execProc(
+            $conn,
+            "BEGIN $pkg.FIDE_EVENTOS_ACTUALIZAR_SP(
             :p1, :p2,
             TO_DATE(:p3,'DD/MM/YYYY HH24:MI'),
             :p4, :p5, :p6
         ); END;",
-        [
-            ':p1' => $cur[0]['ID_EVENTO'],
-            ':p2' => $cur[0]['DESCR_EVENTO'],
-            ':p3' => $cur[0]['FECHA_EVENTO'],
-            ':p4' => $cur[0]['ID_TIPO_EVENTO'],
-            ':p5' => $cur[0]['ID_TIPO_ESPACIO'],
-            ':p6' => $est,
-        ]
-    );
-    jsonOut($r);
-    break;
-
-case 'marcar_paquete_entregado':
-    $id = (int)($_POST['id'] ?? 0);
-
-    $cur = fetchAll($conn,
-        "SELECT ID_PERSONA, ID_RESIDENCIA, FECHA_INGRESO
-         FROM FIDE_LISTAR_PAQUETES_V WHERE ID_PAQUETE = :id",
-        [':id' => $id]
-    );
-
-    if (empty($cur)) {
-        jsonOut(['error' => true, 'mensaje' => 'Paquete no encontrado.']);
+            [
+                ':p1' => $cur[0]['ID_EVENTO'],
+                ':p2' => $cur[0]['DESCR_EVENTO'],
+                ':p3' => $cur[0]['FECHA_EVENTO'],
+                ':p4' => $cur[0]['ID_TIPO_EVENTO'],
+                ':p5' => $cur[0]['ID_TIPO_ESPACIO'],
+                ':p6' => $est,
+            ]
+        );
+        jsonOut($r);
         break;
-    }
 
-    $r = execProc($conn,
-        "BEGIN $pkg.FIDE_PAQUETES_ACTUALIZAR_SP(
+    case 'marcar_paquete_entregado':
+        $id = (int)($_POST['id'] ?? 0);
+
+        $cur = fetchAll(
+            $conn,
+            "SELECT ID_PERSONA, ID_RESIDENCIA, FECHA_INGRESO
+         FROM FIDE_LISTAR_PAQUETES_V WHERE ID_PAQUETE = :id",
+            [':id' => $id]
+        );
+
+        if (empty($cur)) {
+            jsonOut(['error' => true, 'mensaje' => 'Paquete no encontrado.']);
+            break;
+        }
+
+        $r = execProc(
+            $conn,
+            "BEGIN $pkg.FIDE_PAQUETES_ACTUALIZAR_SP(
             :p1, :p2, :p3,
             TO_DATE(:p4,'DD/MM/YYYY HH24:MI'),
             TO_DATE(:p5,'DD/MM/YYYY HH24:MI'),
             :p6
         ); END;",
-        [
-            ':p1' => $id,
-            ':p2' => $cur[0]['ID_PERSONA'],
-            ':p3' => $cur[0]['ID_RESIDENCIA'],
-            ':p4' => $cur[0]['FECHA_INGRESO'],
-            ':p5' => date('d/m/Y H:i'),        // ← formato corregido
-            ':p6' => 16,
-        ]
-    );
-    jsonOut($r);
-    break;
+            [
+                ':p1' => $id,
+                ':p2' => $cur[0]['ID_PERSONA'],
+                ':p3' => $cur[0]['ID_RESIDENCIA'],
+                ':p4' => $cur[0]['FECHA_INGRESO'],
+                ':p5' => date('d/m/Y H:i'), // ← formato DD/MM/YYYY HH24:MI
+                ':p6' => 16,
+            ]
+        );
+        jsonOut($r);
+        break;
 
     case 'listar_turnos':
         $idPersona = (int)($_REQUEST['id_persona'] ?? 0);
         if ($idPersona)
-            $rows = fetchAll($conn,
+            $rows = fetchAll(
+                $conn,
                 "SELECT GUARDIA, FECHA_TURNO AS FECHA, HORARIO, NOMBRE_ESTADO
                  FROM   FIDE_LISTAR_TURNOS_V
                  WHERE  ID_GUARDIA = :pid",
                 [':pid' => $idPersona]
             );
         else
-            $rows = fetchAll($conn,
+            $rows = fetchAll(
+                $conn,
                 "SELECT GUARDIA, FECHA_TURNO AS FECHA, HORARIO, NOMBRE_ESTADO
                  FROM   FIDE_LISTAR_TURNOS_V"
             );
@@ -494,7 +538,8 @@ case 'marcar_paquete_entregado':
         break;
 
     case 'ultimos_eventos':
-        $rows = fetchAll($conn,
+        $rows = fetchAll(
+            $conn,
             "SELECT DESCR_EVENTO, TIPO_EVENTO, FECHA_EVENTO, NOMBRE_ESTADO
              FROM   FIDE_ULTIMOS_EVENTOS_V"
         );
@@ -502,7 +547,8 @@ case 'marcar_paquete_entregado':
         break;
 
     case 'ultimas_visitas':
-        $rows = fetchAll($conn,
+        $rows = fetchAll(
+            $conn,
             "SELECT VISITANTE, ID_RESIDENCIA, FECHA_INGRESO, NOMBRE_ESTADO
              FROM   FIDE_ULTIMAS_VISITAS_V"
         );
@@ -520,39 +566,46 @@ case 'marcar_paquete_entregado':
         $idEstado   = (int)($_POST['id_estado']  ?? 1);
 
         if (!$usuario || !$contrasena) {
-            jsonOut(['error'=>true,'mensaje'=>'El usuario y la contraseña son requeridos.']);
+            jsonOut(['error' => true, 'mensaje' => 'El usuario y la contraseña son requeridos.']);
             break;
         }
 
-        $existe = fetchAll($conn, "SELECT 1 FROM FIDE_USUARIOS_PERSONAS_V WHERE USUARIO = :u", [':u'=>$usuario]);
+        $existe = fetchAll($conn, "SELECT 1 FROM FIDE_USUARIOS_PERSONAS_V WHERE USUARIO = :u", [':u' => $usuario]);
         if (!empty($existe)) {
-            jsonOut(['error'=>true,'mensaje'=>"El usuario '$usuario' ya está en uso."]);
+            jsonOut(['error' => true, 'mensaje' => "El usuario '$usuario' ya está en uso."]);
             break;
         }
 
-        $rolRow = fetchAll($conn, "SELECT ID_ROL FROM FIDE_ROLES_TB WHERE UPPER(ROL) LIKE '%GUARD%' AND ROWNUM=1");
-        if (empty($rolRow)) { jsonOut(['error'=>true,'mensaje'=>'No existe rol guardia.']); break; }
-        $idRol      = (int)$rolRow[0]['ID_ROL'];
-        $idPersona  = nextId('FIDE_PERSONAS_TB',  'ID_PERSONA',  $conn);
-        $idTelefono = nextId('FIDE_TELEFONOS_TB', 'ID_TELEFONO', $conn);
-        $idCorreo   = nextId('FIDE_CORREOS_TB',   'ID_CORREO',   $conn);
-        $hoy        = date('Y-m-d');
+        $rolRow = fetchAll($conn, "SELECT ID_ROL FROM FIDE_LISTAR_ROLES_V WHERE UPPER(ROL) LIKE '%GUARD%' AND ROWNUM=1");
+        if (empty($rolRow)) {
+            jsonOut(['error' => true, 'mensaje' => 'No existe rol guardia.']);
+            break;
+        }
+        $idRol = (int)$rolRow[0]['ID_ROL'];
+        $hoy   = date('Y-m-d');
 
-        $r1 = execProc($conn,
-            "BEGIN $pkg.FIDE_PERSONAS_INSERTAR_SP(:p1,:p2,:p3,:p4,TO_DATE(:p5,'YYYY-MM-DD'),:p6,:p7); END;",
-            [':p1'=>$idPersona,':p2'=>$nombre,':p3'=>$pat,':p4'=>$mat,':p5'=>$hoy,':p6'=>$idRol,':p7'=>$idEstado]
+        $r1 = execProc(
+            $conn,
+            "BEGIN $pkg.FIDE_PERSONAS_INSERTAR_SP(:p1,:p2,:p3,TO_DATE(:p4,'YYYY-MM-DD'),:p5,:p6); END;",
+            [':p1' => $nombre, ':p2' => $pat, ':p3' => $mat, ':p4' => $hoy, ':p5' => $idRol, ':p6' => $idEstado]
         );
-        if ($r1['error'] ?? false) { jsonOut($r1); break; }
+        if ($r1['error'] ?? false) {
+            jsonOut($r1);
+            break;
+        }
 
-        execUpdate($conn,
+        $idPersona = currVal('FIDE_PERSONAS_SEQ', $conn);
+
+        execUpdate(
+            $conn,
             "UPDATE FIDE_PERSONAS_TB SET USUARIO = :u, CONTRASENA = :c WHERE ID_PERSONA = :id",
-            [':u'=>$usuario, ':c'=>$contrasena, ':id'=>$idPersona]
+            [':u' => $usuario, ':c' => $contrasena, ':id' => $idPersona]
         );
 
-        if ($tel)    execProc($conn, "BEGIN $pkg.FIDE_TELEFONOS_INSERTAR_SP(:p1,:p2,:p3,:p4); END;", [':p1'=>$idTelefono,':p2'=>$idPersona,':p3'=>$tel,':p4'=>1]);
-        if ($correo) execProc($conn, "BEGIN $pkg.FIDE_CORREOS_INSERTAR_SP(:p1,:p2,:p3,:p4); END;",   [':p1'=>$idCorreo,':p2'=>$idPersona,':p3'=>$correo,':p4'=>1]);
+        if ($tel)    execProc($conn, "BEGIN $pkg.FIDE_TELEFONOS_INSERTAR_SP(:p1,:p2,:p3); END;", [':p1' => $idPersona, ':p2' => $tel, ':p3' => 1]);
+        if ($correo) execProc($conn, "BEGIN $pkg.FIDE_CORREOS_INSERTAR_SP(:p1,:p2,:p3); END;",   [':p1' => $idPersona, ':p2' => $correo, ':p3' => 1]);
 
-        jsonOut(['ok'=>true,'id'=>$idPersona]);
+        jsonOut(['ok' => true, 'id' => $idPersona]);
         break;
 
     case 'insertar_residente':
@@ -564,36 +617,45 @@ case 'marcar_paquete_entregado':
         $idResidencia = (int)($_POST['id_residencia'] ?? 0);
         $idEstado     = (int)($_POST['id_estado']     ?? 1);
 
-        $rolRow = fetchAll($conn, "SELECT ID_ROL FROM FIDE_ROLES_TB WHERE UPPER(ROL) LIKE '%RESID%' AND ROWNUM=1");
-        if (empty($rolRow)) { jsonOut(['error'=>true,'mensaje'=>'No existe rol residente.']); break; }
-        $idRol      = (int)$rolRow[0]['ID_ROL'];
-        $idPersona  = nextId('FIDE_PERSONAS_TB',  'ID_PERSONA',  $conn);
-        $idTelefono = nextId('FIDE_TELEFONOS_TB', 'ID_TELEFONO', $conn);
-        $idCorreo   = nextId('FIDE_CORREOS_TB',   'ID_CORREO',   $conn);
-        $hoy        = date('Y-m-d');
+        $rolRow = fetchAll($conn, "SELECT ID_ROL FROM FIDE_LISTAR_ROLES_V WHERE UPPER(ROL) LIKE '%RESID%' AND ROWNUM=1");
+        if (empty($rolRow)) {
+            jsonOut(['error' => true, 'mensaje' => 'No existe rol residente.']);
+            break;
+        }
+        $idRol = (int)$rolRow[0]['ID_ROL'];
+        $hoy   = date('Y-m-d');
 
-        $r1 = execProc($conn,
-            "BEGIN $pkg.FIDE_PERSONAS_INSERTAR_SP(:p1,:p2,:p3,:p4,TO_DATE(:p5,'YYYY-MM-DD'),:p6,:p7); END;",
-            [':p1'=>$idPersona,':p2'=>$nombre,':p3'=>$pat,':p4'=>$mat,':p5'=>$hoy,':p6'=>$idRol,':p7'=>$idEstado]
+        $r1 = execProc(
+            $conn,
+            "BEGIN $pkg.FIDE_PERSONAS_INSERTAR_SP(:p1,:p2,:p3,TO_DATE(:p4,'YYYY-MM-DD'),:p5,:p6); END;",
+            [':p1' => $nombre, ':p2' => $pat, ':p3' => $mat, ':p4' => $hoy, ':p5' => $idRol, ':p6' => $idEstado]
         );
-        if ($r1['error'] ?? false) { jsonOut($r1); break; }
+        if ($r1['error'] ?? false) {
+            jsonOut($r1);
+            break;
+        }
 
-        if ($tel)          execProc($conn, "BEGIN $pkg.FIDE_TELEFONOS_INSERTAR_SP(:p1,:p2,:p3,:p4); END;", [':p1'=>$idTelefono,':p2'=>$idPersona,':p3'=>$tel,':p4'=>1]);
-        if ($correo)       execProc($conn, "BEGIN $pkg.FIDE_CORREOS_INSERTAR_SP(:p1,:p2,:p3,:p4); END;",   [':p1'=>$idCorreo,':p2'=>$idPersona,':p3'=>$correo,':p4'=>1]);
-        if ($idResidencia) execProc($conn, "BEGIN $pkg.FIDE_RESIDENTES_INSERTAR_SP(:p1,:p2,:p3); END;",    [':p1'=>$idPersona,':p2'=>$idResidencia,':p3'=>$idEstado]);
+        $idPersona = currVal('FIDE_PERSONAS_SEQ', $conn);
 
-        jsonOut(['ok'=>true,'id'=>$idPersona]);
+        if ($tel)          execProc($conn, "BEGIN $pkg.FIDE_TELEFONOS_INSERTAR_SP(:p1,:p2,:p3); END;", [':p1' => $idPersona, ':p2' => $tel, ':p3' => 1]);
+        if ($correo)       execProc($conn, "BEGIN $pkg.FIDE_CORREOS_INSERTAR_SP(:p1,:p2,:p3); END;",   [':p1' => $idPersona, ':p2' => $correo, ':p3' => 1]);
+        if ($idResidencia) execProc($conn, "BEGIN $pkg.FIDE_RESIDENTES_INSERTAR_SP(:p1,:p2,:p3); END;", [':p1' => $idPersona, ':p2' => $idResidencia, ':p3' => $idEstado]);
+
+        jsonOut(['ok' => true, 'id' => $idPersona]);
         break;
 
     case 'insertar_residencia':
         $montoAlq  = (float)($_POST['monto_alquiler']      ?? 0);
         $montoMant = (float)($_POST['monto_mantenimiento'] ?? 0);
-        $idTipoPago= (int)  ($_POST['id_tipo_pago']        ?? 1);
+        $idTipoPago = (int)  ($_POST['id_tipo_pago']        ?? 1);
         $idEstado  = (int)  ($_POST['id_estado']           ?? 1);
-        $id = nextId('FIDE_RESIDENCIAS_TB','ID_RESIDENCIA',$conn);
-        $r  = execProc($conn, "BEGIN $pkg.FIDE_RESIDENCIAS_INSERTAR_SP(:p1,:p2,:p3,:p4,:p5); END;",
-            [':p1'=>$id,':p2'=>$montoAlq,':p3'=>$montoMant,':p4'=>$idTipoPago,':p5'=>$idEstado]);
-        jsonOut(($r['error'] ?? false) ? $r : ['ok'=>true,'id'=>$id]);
+        $r  = execProc(
+            $conn,
+            "BEGIN $pkg.FIDE_RESIDENCIAS_INSERTAR_SP(:p1,:p2,:p3,:p4); END;",
+            [':p1' => $montoAlq, ':p2' => $montoMant, ':p3' => $idTipoPago, ':p4' => $idEstado]
+        );
+        $id = currVal('FIDE_RESIDENCIAS_SEQ', $conn);
+        jsonOut(($r['error'] ?? false) ? $r : ['ok' => true, 'id' => $id]);
         break;
 
     case 'insertar_visita':
@@ -606,27 +668,34 @@ case 'marcar_paquete_entregado':
         if (!$fechaIngreso) $fechaIngreso = date('Y-m-d H:i');
 
         if (!$idPersona) {
-            $nombreV  = trim($_POST['nombre_visitante'] ?? 'Visitante');
-            $partes   = explode(' ', $nombreV, 2);
-            $idPersona= nextId('FIDE_PERSONAS_TB','ID_PERSONA',$conn);
-            $rolV     = fetchAll($conn, "SELECT ID_ROL FROM FIDE_ROLES_TB WHERE UPPER(ROL) LIKE '%VISIT%' AND ROWNUM=1");
-            $rolVId   = $rolV[0]['ID_ROL'] ?? $idRol;
-            execProc($conn,
-                "BEGIN $pkg.FIDE_PERSONAS_INSERTAR_SP(:p1,:p2,:p3,:p4,TO_DATE(:p5,'YYYY-MM-DD'),:p6,:p7); END;",
-                [':p1'=>$idPersona,':p2'=>($partes[0]??$nombreV),':p3'=>($partes[1]??''),':p4'=>'',
-                 ':p5'=>date('Y-m-d'),':p6'=>$rolVId,':p7'=>$idEstado]
+            $nombreV = trim($_POST['nombre_visitante'] ?? 'Visitante');
+            $partes  = explode(' ', $nombreV, 2);
+            $rolV    = fetchAll($conn, "SELECT ID_ROL FROM FIDE_LISTAR_ROLES_V WHERE UPPER(ROL) LIKE '%VISIT%' AND ROWNUM=1");
+            $rolVId  = $rolV[0]['ID_ROL'] ?? $idRol;
+            execProc(
+                $conn,
+                "BEGIN $pkg.FIDE_PERSONAS_INSERTAR_SP(:p1,:p2,:p3,TO_DATE(:p4,'YYYY-MM-DD'),:p5,:p6); END;",
+                [
+                    ':p1' => ($partes[0] ?? $nombreV),
+                    ':p2' => ($partes[1] ?? ''),
+                    ':p3' => '',
+                    ':p4' => date('Y-m-d'),
+                    ':p5' => $rolVId,
+                    ':p6' => $idEstado
+                ]
             );
+            $idPersona = currVal('FIDE_PERSONAS_SEQ', $conn);
         }
-        $id = nextId('FIDE_VISITAS_TB','ID_VISITA',$conn);
         if ($fechaSalida) {
-            $sql   = "BEGIN $pkg.FIDE_VISITAS_INSERTAR_SP(:p1,:p2,TO_DATE(:p3,'YYYY-MM-DD HH24:MI'),TO_DATE(:p4,'YYYY-MM-DD HH24:MI'),:p5,:p6,:p7); END;";
-            $binds = [':p1'=>$id,':p2'=>$idPersona,':p3'=>$fechaIngreso,':p4'=>$fechaSalida,':p5'=>$idResidencia,':p6'=>$idRol,':p7'=>$idEstado];
+            $sql   = "BEGIN $pkg.FIDE_VISITAS_INSERTAR_SP(:p1,TO_DATE(:p2,'YYYY-MM-DD HH24:MI'),TO_DATE(:p3,'YYYY-MM-DD HH24:MI'),:p4,:p5,:p6); END;";
+            $binds = [':p1' => $idPersona, ':p2' => $fechaIngreso, ':p3' => $fechaSalida, ':p4' => $idResidencia, ':p5' => $idRol, ':p6' => $idEstado];
         } else {
-            $sql   = "BEGIN $pkg.FIDE_VISITAS_INSERTAR_SP(:p1,:p2,TO_DATE(:p3,'YYYY-MM-DD HH24:MI'),NULL,:p5,:p6,:p7); END;";
-            $binds = [':p1'=>$id,':p2'=>$idPersona,':p3'=>$fechaIngreso,':p5'=>$idResidencia,':p6'=>$idRol,':p7'=>$idEstado];
+            $sql   = "BEGIN $pkg.FIDE_VISITAS_INSERTAR_SP(:p1,TO_DATE(:p2,'YYYY-MM-DD HH24:MI'),NULL,:p3,:p4,:p5); END;";
+            $binds = [':p1' => $idPersona, ':p2' => $fechaIngreso, ':p3' => $idResidencia, ':p4' => $idRol, ':p5' => $idEstado];
         }
-        $r = execProc($conn, $sql, $binds);
-        jsonOut(($r['error'] ?? false) ? $r : ['ok'=>true,'id'=>$id]);
+        $r  = execProc($conn, $sql, $binds);
+        $id = currVal('FIDE_VISITAS_SEQ', $conn);
+        jsonOut(($r['error'] ?? false) ? $r : ['ok' => true, 'id' => $id]);
         break;
 
     case 'insertar_paquete':
@@ -636,16 +705,16 @@ case 'marcar_paquete_entregado':
         $fechaSalida  = $_POST['fecha_salida']  ?? '';
         $idEstado     = (int)($_POST['id_estado'] ?? 3);
         if (!$fechaIngreso) $fechaIngreso = date('Y-m-d');
-        $id = nextId('FIDE_PAQUETES_TB','ID_PAQUETE',$conn);
         if ($fechaSalida) {
-            $sql   = "BEGIN $pkg.FIDE_PAQUETES_INSERTAR_SP(:p1,:p2,:p3,TO_DATE(:p4,'YYYY-MM-DD'),TO_DATE(:p5,'YYYY-MM-DD'),:p6); END;";
-            $binds = [':p1'=>$id,':p2'=>$idPersona,':p3'=>$idResidencia,':p4'=>$fechaIngreso,':p5'=>$fechaSalida,':p6'=>$idEstado];
+            $sql   = "BEGIN $pkg.FIDE_PAQUETES_INSERTAR_SP(:p1,:p2,TO_DATE(:p3,'YYYY-MM-DD'),TO_DATE(:p4,'YYYY-MM-DD'),:p5); END;";
+            $binds = [':p1' => $idPersona, ':p2' => $idResidencia, ':p3' => $fechaIngreso, ':p4' => $fechaSalida, ':p5' => $idEstado];
         } else {
-            $sql   = "BEGIN $pkg.FIDE_PAQUETES_INSERTAR_SP(:p1,:p2,:p3,TO_DATE(:p4,'YYYY-MM-DD'),NULL,:p6); END;";
-            $binds = [':p1'=>$id,':p2'=>$idPersona,':p3'=>$idResidencia,':p4'=>$fechaIngreso,':p6'=>$idEstado];
+            $sql   = "BEGIN $pkg.FIDE_PAQUETES_INSERTAR_SP(:p1,:p2,TO_DATE(:p3,'YYYY-MM-DD'),NULL,:p4); END;";
+            $binds = [':p1' => $idPersona, ':p2' => $idResidencia, ':p3' => $fechaIngreso, ':p4' => $idEstado];
         }
-        $r = execProc($conn, $sql, $binds);
-        jsonOut(($r['error'] ?? false) ? $r : ['ok'=>true,'id'=>$id]);
+        $r  = execProc($conn, $sql, $binds);
+        $id = currVal('FIDE_PAQUETES_SEQ', $conn);
+        jsonOut(($r['error'] ?? false) ? $r : ['ok' => true, 'id' => $id]);
         break;
 
     case 'insertar_factura':
@@ -656,12 +725,13 @@ case 'marcar_paquete_entregado':
         $idPersona    = (int)($_POST['id_persona']    ?? 0);
         $idEstado     = (int)($_POST['id_estado']     ?? 1);
         if (!$fechaFactura) $fechaFactura = date('Y-m-d');
-        $id = nextId('FIDE_FACTURAS_TB','ID_FACTURA',$conn);
-        $r  = execProc($conn,
-            "BEGIN $pkg.FIDE_FACTURAS_INSERTAR_SP(:p1,TO_DATE(:p2,'YYYY-MM-DD'),:p3,:p4,:p5,:p6,:p7); END;",
-            [':p1'=>$id,':p2'=>$fechaFactura,':p3'=>$descr,':p4'=>$idTipoPago,':p5'=>$idFormaPago,':p6'=>$idPersona,':p7'=>$idEstado]
+        $r  = execProc(
+            $conn,
+            "BEGIN $pkg.FIDE_FACTURAS_INSERTAR_SP(TO_DATE(:p1,'YYYY-MM-DD'),:p2,:p3,:p4,:p5,:p6); END;",
+            [':p1' => $fechaFactura, ':p2' => $descr, ':p3' => $idTipoPago, ':p4' => $idFormaPago, ':p5' => $idPersona, ':p6' => $idEstado]
         );
-        jsonOut(($r['error'] ?? false) ? $r : ['ok'=>true,'id'=>$id]);
+        $id = currVal('FIDE_FACTURAS_SEQ', $conn);
+        jsonOut(($r['error'] ?? false) ? $r : ['ok' => true, 'id' => $id]);
         break;
 
     case 'insertar_servicio':
@@ -671,19 +741,22 @@ case 'marcar_paquete_entregado':
         $idTipoEvento      = (int)($_POST['id_tipo_evento']      ?? 1);
         $idEstado          = (int)($_POST['id_estado']           ?? 1);
         $idPersonaServicio = (int)($_POST['id_persona_servicio'] ?? 0);
-        $id = nextId('FIDE_SERVICIOS_TB','ID_SERVICIO',$conn);
         if ($fechaSalida) {
-            $sql   = "BEGIN $pkg.FIDE_SERVICIOS_INSERTAR_SP(:p1,:p2,TO_DATE(:p3,'YYYY-MM-DD'),:p4,:p5,:p6); END;";
-            $binds = [':p1'=>$id,':p2'=>$descr,':p3'=>$fechaSalida,':p4'=>$idTipoServicio,':p5'=>$idTipoEvento,':p6'=>$idEstado];
+            $sql   = "BEGIN $pkg.FIDE_SERVICIOS_INSERTAR_SP(:p1,TO_DATE(:p2,'YYYY-MM-DD'),:p3,:p4,:p5); END;";
+            $binds = [':p1' => $descr, ':p2' => $fechaSalida, ':p3' => $idTipoServicio, ':p4' => $idTipoEvento, ':p5' => $idEstado];
         } else {
-            $sql   = "BEGIN $pkg.FIDE_SERVICIOS_INSERTAR_SP(:p1,:p2,NULL,:p4,:p5,:p6); END;";
-            $binds = [':p1'=>$id,':p2'=>$descr,':p4'=>$idTipoServicio,':p5'=>$idTipoEvento,':p6'=>$idEstado];
+            $sql   = "BEGIN $pkg.FIDE_SERVICIOS_INSERTAR_SP(:p1,NULL,:p2,:p3,:p4); END;";
+            $binds = [':p1' => $descr, ':p2' => $idTipoServicio, ':p3' => $idTipoEvento, ':p4' => $idEstado];
         }
         $r = execProc($conn, $sql, $binds);
-        if ($r['error'] ?? false) { jsonOut($r); break; }
+        if ($r['error'] ?? false) {
+            jsonOut($r);
+            break;
+        }
+        $id = currVal('FIDE_SERVICIOS_SEQ', $conn);
         if ($idPersonaServicio)
-            execProc($conn,"BEGIN $pkg.FIDE_PERSONAS_SERVICIOS_INSERTAR_SP(:p1,:p2,:p3); END;",[':p1'=>$id,':p2'=>$idPersonaServicio,':p3'=>$idEstado]);
-        jsonOut(['ok'=>true,'id'=>$id]);
+            execProc($conn, "BEGIN $pkg.FIDE_PERSONAS_SERVICIOS_INSERTAR_SP(:p1,:p2,:p3); END;", [':p1' => $id, ':p2' => $idPersonaServicio, ':p3' => $idEstado]);
+        jsonOut(['ok' => true, 'id' => $id]);
         break;
 
     case 'insertar_evento':
@@ -693,12 +766,13 @@ case 'marcar_paquete_entregado':
         $idTipoEspacio = (int)($_POST['id_tipo_espacio'] ?? 1);
         $idEstado      = (int)($_POST['id_estado']       ?? 1);
         if (!$fechaEvento) $fechaEvento = date('Y-m-d');
-        $id = nextId('FIDE_EVENTOS_TB','ID_EVENTO',$conn);
-        $r  = execProc($conn,
-            "BEGIN $pkg.FIDE_EVENTOS_INSERTAR_SP(:p1,:p2,TO_DATE(:p3,'YYYY-MM-DD'),:p4,:p5,:p6); END;",
-            [':p1'=>$id,':p2'=>$descr,':p3'=>$fechaEvento,':p4'=>$idTipoEvento,':p5'=>$idTipoEspacio,':p6'=>$idEstado]
+        $r  = execProc(
+            $conn,
+            "BEGIN $pkg.FIDE_EVENTOS_INSERTAR_SP(:p1,TO_DATE(:p2,'YYYY-MM-DD'),:p3,:p4,:p5); END;",
+            [':p1' => $descr, ':p2' => $fechaEvento, ':p3' => $idTipoEvento, ':p4' => $idTipoEspacio, ':p5' => $idEstado]
         );
-        jsonOut(($r['error'] ?? false) ? $r : ['ok'=>true,'id'=>$id]);
+        $id = currVal('FIDE_EVENTOS_SEQ', $conn);
+        jsonOut(($r['error'] ?? false) ? $r : ['ok' => true, 'id' => $id]);
         break;
 
     case 'insertar_vehiculo':
@@ -707,11 +781,12 @@ case 'marcar_paquete_entregado':
         $idTipoEspacio = (int)($_POST['id_tipo_espacio'] ?? 1);
         $idPersona     = (int)($_POST['id_persona']      ?? 0);
         $idEstado      = (int)($_POST['id_estado']       ?? 1);
-        $r = execProc($conn,
+        $r = execProc(
+            $conn,
             "BEGIN $pkg.FIDE_VEHICULOS_INSERTAR_SP(:p1,:p2,:p3,:p4,:p5); END;",
-            [':p1'=>$placa,':p2'=>$descripcion,':p3'=>$idTipoEspacio,':p4'=>$idPersona,':p5'=>$idEstado]
+            [':p1' => $placa, ':p2' => $descripcion, ':p3' => $idTipoEspacio, ':p4' => $idPersona, ':p5' => $idEstado]
         );
-        jsonOut(($r['error'] ?? false) ? $r : ['ok'=>true]);
+        jsonOut(($r['error'] ?? false) ? $r : ['ok' => true]);
         break;
 
     case 'actualizar_guardia':
@@ -726,54 +801,73 @@ case 'marcar_paquete_entregado':
         $idEstado   = (int)($_POST['id_estado']       ?? 1);
 
         if (!$usuario) {
-            jsonOut(['error'=>true,'mensaje'=>'El usuario no puede estar vacío.']);
+            jsonOut(['error' => true, 'mensaje' => 'El usuario no puede estar vacío.']);
             break;
         }
 
-        $existe = fetchAll($conn,
+        $existe = fetchAll(
+            $conn,
             "SELECT 1 FROM FIDE_USUARIOS_PERSONAS_V WHERE USUARIO = :u AND ID_PERSONA != :id",
-            [':u'=>$usuario, ':id'=>$id]
+            [':u' => $usuario, ':id' => $id]
         );
         if (!empty($existe)) {
-            jsonOut(['error'=>true,'mensaje'=>"El usuario '$usuario' ya está en uso por otra persona."]);
+            jsonOut(['error' => true, 'mensaje' => "El usuario '$usuario' ya está en uso por otra persona."]);
             break;
         }
 
-        $cur = fetchAll($conn,
-            "SELECT ID_ROL, TO_CHAR(FECHA_REGISTRO,'YYYY-MM-DD') AS FR FROM FIDE_PERSONAS_TB WHERE ID_PERSONA=:pid",
-            [':pid'=>$id]);
-        if (empty($cur)) { jsonOut(['error'=>true,'mensaje'=>'Persona no encontrada.']); break; }
-
-        $r = execProc($conn,
-            "BEGIN $pkg.FIDE_PERSONAS_ACTUALIZAR_SP(:p1,:p2,:p3,:p4,TO_DATE(:p5,'YYYY-MM-DD'),:p6,:p7); END;",
-            [':p1'=>$id,':p2'=>$nombre,':p3'=>$pat,':p4'=>$mat,
-             ':p5'=>$cur[0]['FR'],':p6'=>$cur[0]['ID_ROL'],':p7'=>$idEstado]
+        $cur = fetchAll(
+            $conn,
+            "SELECT ID_ROL, TO_CHAR(FECHA_REGISTRO,'YYYY-MM-DD') AS FR FROM FIDE_PERSONAS_DETALLE_V WHERE ID_PERSONA=:pid",
+            [':pid' => $id]
         );
-        if ($r['error'] ?? false) { jsonOut($r); break; }
+        if (empty($cur)) {
+            jsonOut(['error' => true, 'mensaje' => 'Persona no encontrada.']);
+            break;
+        }
+
+        $r = execProc(
+            $conn,
+            "BEGIN $pkg.FIDE_PERSONAS_ACTUALIZAR_SP(:p1,:p2,:p3,:p4,TO_DATE(:p5,'YYYY-MM-DD'),:p6,:p7); END;",
+            [
+                ':p1' => $id,
+                ':p2' => $nombre,
+                ':p3' => $pat,
+                ':p4' => $mat,
+                ':p5' => $cur[0]['FR'],
+                ':p6' => $cur[0]['ID_ROL'],
+                ':p7' => $idEstado
+            ]
+        );
+        if ($r['error'] ?? false) {
+            jsonOut($r);
+            break;
+        }
 
         if ($contrasena) {
-            execUpdate($conn,
+            execUpdate(
+                $conn,
                 "UPDATE FIDE_PERSONAS_TB SET USUARIO = :u, CONTRASENA = :c WHERE ID_PERSONA = :id",
-                [':u'=>$usuario, ':c'=>$contrasena, ':id'=>$id]
+                [':u' => $usuario, ':c' => $contrasena, ':id' => $id]
             );
         } else {
-            execUpdate($conn,
+            execUpdate(
+                $conn,
                 "UPDATE FIDE_PERSONAS_TB SET USUARIO = :u WHERE ID_PERSONA = :id",
-                [':u'=>$usuario, ':id'=>$id]
+                [':u' => $usuario, ':id' => $id]
             );
         }
 
         if ($tel) {
-            $tRow = fetchAll($conn,"SELECT ID_TELEFONO FROM FIDE_TELEFONOS_TB WHERE ID_PERSONA=:pid AND ROWNUM=1",[':pid'=>$id]);
-            if ($tRow) execProc($conn,"BEGIN $pkg.FIDE_TELEFONOS_ACTUALIZAR_SP(:p1,:p2,:p3,:p4); END;",[':p1'=>$tRow[0]['ID_TELEFONO'],':p2'=>$id,':p3'=>$tel,':p4'=>1]);
-            else { $nId=nextId('FIDE_TELEFONOS_TB','ID_TELEFONO',$conn); execProc($conn,"BEGIN $pkg.FIDE_TELEFONOS_INSERTAR_SP(:p1,:p2,:p3,:p4); END;",[':p1'=>$nId,':p2'=>$id,':p3'=>$tel,':p4'=>1]); }
+            $tRow = fetchAll($conn, "SELECT ID_TELEFONO FROM FIDE_TELEFONOS_PERSONA_V WHERE ID_PERSONA=:pid AND ROWNUM=1", [':pid' => $id]);
+            if ($tRow) execProc($conn, "BEGIN $pkg.FIDE_TELEFONOS_ACTUALIZAR_SP(:p1,:p2,:p3,:p4); END;", [':p1' => $tRow[0]['ID_TELEFONO'], ':p2' => $id, ':p3' => $tel, ':p4' => 1]);
+            else execProc($conn, "BEGIN $pkg.FIDE_TELEFONOS_INSERTAR_SP(:p1,:p2,:p3); END;", [':p1' => $id, ':p2' => $tel, ':p3' => 1]);
         }
         if ($correo) {
-            $cRow = fetchAll($conn,"SELECT ID_CORREO FROM FIDE_CORREOS_TB WHERE ID_PERSONA=:pid AND ROWNUM=1",[':pid'=>$id]);
-            if ($cRow) execProc($conn,"BEGIN $pkg.FIDE_CORREOS_ACTUALIZAR_SP(:p1,:p2,:p3,:p4); END;",[':p1'=>$cRow[0]['ID_CORREO'],':p2'=>$id,':p3'=>$correo,':p4'=>1]);
-            else { $nId=nextId('FIDE_CORREOS_TB','ID_CORREO',$conn); execProc($conn,"BEGIN $pkg.FIDE_CORREOS_INSERTAR_SP(:p1,:p2,:p3,:p4); END;",[':p1'=>$nId,':p2'=>$id,':p3'=>$correo,':p4'=>1]); }
+            $cRow = fetchAll($conn, "SELECT ID_CORREO FROM FIDE_CORREOS_PERSONA_V WHERE ID_PERSONA=:pid AND ROWNUM=1", [':pid' => $id]);
+            if ($cRow) execProc($conn, "BEGIN $pkg.FIDE_CORREOS_ACTUALIZAR_SP(:p1,:p2,:p3,:p4); END;", [':p1' => $cRow[0]['ID_CORREO'], ':p2' => $id, ':p3' => $correo, ':p4' => 1]);
+            else execProc($conn, "BEGIN $pkg.FIDE_CORREOS_INSERTAR_SP(:p1,:p2,:p3); END;", [':p1' => $id, ':p2' => $correo, ':p3' => 1]);
         }
-        jsonOut(['ok'=>true]);
+        jsonOut(['ok' => true]);
         break;
 
     case 'actualizar_residente':
@@ -786,32 +880,48 @@ case 'marcar_paquete_entregado':
         $idResidencia = (int)($_POST['id_residencia']   ?? 0);
         $idEstado     = (int)($_POST['id_estado']       ?? 1);
 
-        $cur = fetchAll($conn,
-            "SELECT ID_ROL, TO_CHAR(FECHA_REGISTRO,'YYYY-MM-DD') AS FR FROM FIDE_PERSONAS_TB WHERE ID_PERSONA=:pid",
-            [':pid'=>$id]);
-        if (empty($cur)) { jsonOut(['error'=>true,'mensaje'=>'Persona no encontrada.']); break; }
-
-        $r = execProc($conn,
-            "BEGIN $pkg.FIDE_PERSONAS_ACTUALIZAR_SP(:p1,:p2,:p3,:p4,TO_DATE(:p5,'YYYY-MM-DD'),:p6,:p7); END;",
-            [':p1'=>$id,':p2'=>$nombre,':p3'=>$pat,':p4'=>$mat,
-             ':p5'=>$cur[0]['FR'],':p6'=>$cur[0]['ID_ROL'],':p7'=>$idEstado]
+        $cur = fetchAll(
+            $conn,
+            "SELECT ID_ROL, TO_CHAR(FECHA_REGISTRO,'YYYY-MM-DD') AS FR FROM FIDE_PERSONAS_DETALLE_V WHERE ID_PERSONA=:pid",
+            [':pid' => $id]
         );
-        if ($r['error'] ?? false) { jsonOut($r); break; }
+        if (empty($cur)) {
+            jsonOut(['error' => true, 'mensaje' => 'Persona no encontrada.']);
+            break;
+        }
+
+        $r = execProc(
+            $conn,
+            "BEGIN $pkg.FIDE_PERSONAS_ACTUALIZAR_SP(:p1,:p2,:p3,:p4,TO_DATE(:p5,'YYYY-MM-DD'),:p6,:p7); END;",
+            [
+                ':p1' => $id,
+                ':p2' => $nombre,
+                ':p3' => $pat,
+                ':p4' => $mat,
+                ':p5' => $cur[0]['FR'],
+                ':p6' => $cur[0]['ID_ROL'],
+                ':p7' => $idEstado
+            ]
+        );
+        if ($r['error'] ?? false) {
+            jsonOut($r);
+            break;
+        }
 
         if ($tel) {
-            $tRow = fetchAll($conn,"SELECT ID_TELEFONO FROM FIDE_TELEFONOS_TB WHERE ID_PERSONA=:pid AND ROWNUM=1",[':pid'=>$id]);
-            if ($tRow) execProc($conn,"BEGIN $pkg.FIDE_TELEFONOS_ACTUALIZAR_SP(:p1,:p2,:p3,:p4); END;",[':p1'=>$tRow[0]['ID_TELEFONO'],':p2'=>$id,':p3'=>$tel,':p4'=>1]);
-            else { $nId=nextId('FIDE_TELEFONOS_TB','ID_TELEFONO',$conn); execProc($conn,"BEGIN $pkg.FIDE_TELEFONOS_INSERTAR_SP(:p1,:p2,:p3,:p4); END;",[':p1'=>$nId,':p2'=>$id,':p3'=>$tel,':p4'=>1]); }
+            $tRow = fetchAll($conn, "SELECT ID_TELEFONO FROM FIDE_TELEFONOS_PERSONA_V WHERE ID_PERSONA=:pid AND ROWNUM=1", [':pid' => $id]);
+            if ($tRow) execProc($conn, "BEGIN $pkg.FIDE_TELEFONOS_ACTUALIZAR_SP(:p1,:p2,:p3,:p4); END;", [':p1' => $tRow[0]['ID_TELEFONO'], ':p2' => $id, ':p3' => $tel, ':p4' => 1]);
+            else execProc($conn, "BEGIN $pkg.FIDE_TELEFONOS_INSERTAR_SP(:p1,:p2,:p3); END;", [':p1' => $id, ':p2' => $tel, ':p3' => 1]);
         }
         if ($correo) {
-            $cRow = fetchAll($conn,"SELECT ID_CORREO FROM FIDE_CORREOS_TB WHERE ID_PERSONA=:pid AND ROWNUM=1",[':pid'=>$id]);
-            if ($cRow) execProc($conn,"BEGIN $pkg.FIDE_CORREOS_ACTUALIZAR_SP(:p1,:p2,:p3,:p4); END;",[':p1'=>$cRow[0]['ID_CORREO'],':p2'=>$id,':p3'=>$correo,':p4'=>1]);
-            else { $nId=nextId('FIDE_CORREOS_TB','ID_CORREO',$conn); execProc($conn,"BEGIN $pkg.FIDE_CORREOS_INSERTAR_SP(:p1,:p2,:p3,:p4); END;",[':p1'=>$nId,':p2'=>$id,':p3'=>$correo,':p4'=>1]); }
+            $cRow = fetchAll($conn, "SELECT ID_CORREO FROM FIDE_CORREOS_PERSONA_V WHERE ID_PERSONA=:pid AND ROWNUM=1", [':pid' => $id]);
+            if ($cRow) execProc($conn, "BEGIN $pkg.FIDE_CORREOS_ACTUALIZAR_SP(:p1,:p2,:p3,:p4); END;", [':p1' => $cRow[0]['ID_CORREO'], ':p2' => $id, ':p3' => $correo, ':p4' => 1]);
+            else execProc($conn, "BEGIN $pkg.FIDE_CORREOS_INSERTAR_SP(:p1,:p2,:p3); END;", [':p1' => $id, ':p2' => $correo, ':p3' => 1]);
         }
         if ($idResidencia)
-            execProc($conn,"BEGIN $pkg.FIDE_RESIDENTES_ACTUALIZAR_SP(:p1,:p2,:p3); END;",[':p1'=>$id,':p2'=>$idResidencia,':p3'=>$idEstado]);
+            execProc($conn, "BEGIN $pkg.FIDE_RESIDENTES_ACTUALIZAR_SP(:p1,:p2,:p3); END;", [':p1' => $id, ':p2' => $idResidencia, ':p3' => $idEstado]);
 
-        jsonOut(['ok'=>true]);
+        jsonOut(['ok' => true]);
         break;
 
     case 'actualizar_residencia':
@@ -820,9 +930,10 @@ case 'marcar_paquete_entregado':
         $montoMant  = (float)($_POST['monto_mantenimiento'] ?? 0);
         $idTipoPago = (int)($_POST['id_tipo_pago']        ?? 1);
         $idEstado   = (int)($_POST['id_estado']           ?? 1);
-        $r = execProc($conn,
+        $r = execProc(
+            $conn,
             "BEGIN $pkg.FIDE_RESIDENCIAS_ACTUALIZAR_SP(:p1,:p2,:p3,:p4,:p5); END;",
-            [':p1'=>$id,':p2'=>$montoAlq,':p3'=>$montoMant,':p4'=>$idTipoPago,':p5'=>$idEstado]
+            [':p1' => $id, ':p2' => $montoAlq, ':p3' => $montoMant, ':p4' => $idTipoPago, ':p5' => $idEstado]
         );
         jsonOut($r);
         break;
@@ -836,10 +947,10 @@ case 'marcar_paquete_entregado':
         $idEstado       = (int)($_POST['id_estado']          ?? 1);
         if ($fechaSalida) {
             $sql   = "BEGIN $pkg.FIDE_SERVICIOS_ACTUALIZAR_SP(:p1,:p2,TO_DATE(:p3,'YYYY-MM-DD'),:p4,:p5,:p6); END;";
-            $binds = [':p1'=>$id,':p2'=>$descr,':p3'=>$fechaSalida,':p4'=>$idTipoServicio,':p5'=>$idTipoEvento,':p6'=>$idEstado];
+            $binds = [':p1' => $id, ':p2' => $descr, ':p3' => $fechaSalida, ':p4' => $idTipoServicio, ':p5' => $idTipoEvento, ':p6' => $idEstado];
         } else {
             $sql   = "BEGIN $pkg.FIDE_SERVICIOS_ACTUALIZAR_SP(:p1,:p2,NULL,:p4,:p5,:p6); END;";
-            $binds = [':p1'=>$id,':p2'=>$descr,':p4'=>$idTipoServicio,':p5'=>$idTipoEvento,':p6'=>$idEstado];
+            $binds = [':p1' => $id, ':p2' => $descr, ':p4' => $idTipoServicio, ':p5' => $idTipoEvento, ':p6' => $idEstado];
         }
         jsonOut(execProc($conn, $sql, $binds));
         break;
@@ -847,13 +958,14 @@ case 'marcar_paquete_entregado':
     case 'actualizar_evento':
         $id            = (int)($_POST['id']               ?? 0);
         $descr         = $_POST['descr_evento']           ?? '';
-        $fechaEvento   = $_POST['fecha_evento']           ?? date('Y-m-d');
+        $fechaEvento   = $_POST['fecha_evento']           ?? date('d/m/Y H:i');
         $idTipoEvento  = (int)($_POST['id_tipo_evento']   ?? 1);
         $idTipoEspacio = (int)($_POST['id_tipo_espacio']  ?? 1);
         $idEstado      = (int)($_POST['id_estado']        ?? 1);
-        $r = execProc($conn,
-            "BEGIN $pkg.FIDE_EVENTOS_ACTUALIZAR_SP(:p1,:p2,TO_DATE(:p3,'YYYY-MM-DD'),:p4,:p5,:p6); END;",
-            [':p1'=>$id,':p2'=>$descr,':p3'=>$fechaEvento,':p4'=>$idTipoEvento,':p5'=>$idTipoEspacio,':p6'=>$idEstado]
+        $r = execProc(
+            $conn,
+            "BEGIN $pkg.FIDE_EVENTOS_ACTUALIZAR_SP(:p1,:p2,TO_DATE(:p3,'DD/MM/YYYY HH24:MI'),:p4,:p5,:p6); END;",
+            [':p1' => $id, ':p2' => $descr, ':p3' => $fechaEvento, ':p4' => $idTipoEvento, ':p5' => $idTipoEspacio, ':p6' => $idEstado]
         );
         jsonOut($r);
         break;
@@ -862,48 +974,51 @@ case 'marcar_paquete_entregado':
     case 'eliminar_residente':
     case 'eliminar_persona':
         $id = (int)($_REQUEST['id'] ?? 0);
-        jsonOut(execProc($conn,"BEGIN $pkg.FIDE_PERSONAS_ELIMINAR_SP(:p1); END;",[':p1'=>$id]));
+        jsonOut(execProc($conn, "BEGIN $pkg.FIDE_PERSONAS_ELIMINAR_SP(:p1); END;", [':p1' => $id]));
         break;
 
     case 'eliminar_residencia':
         $id = (int)($_REQUEST['id'] ?? 0);
-        jsonOut(execProc($conn,"BEGIN $pkg.FIDE_RESIDENCIAS_ELIMINAR_SP(:p1); END;",[':p1'=>$id]));
+        jsonOut(execProc($conn, "BEGIN $pkg.FIDE_RESIDENCIAS_ELIMINAR_SP(:p1); END;", [':p1' => $id]));
         break;
 
     case 'eliminar_visita':
         $id = (int)($_REQUEST['id'] ?? 0);
-        jsonOut(execProc($conn,"BEGIN $pkg.FIDE_VISITAS_ELIMINAR_SP(:p1); END;",[':p1'=>$id]));
+        jsonOut(execProc($conn, "BEGIN $pkg.FIDE_VISITAS_ELIMINAR_SP(:p1); END;", [':p1' => $id]));
         break;
 
     case 'eliminar_paquete':
         $id = (int)($_REQUEST['id'] ?? 0);
-        jsonOut(execProc($conn,"BEGIN $pkg.FIDE_PAQUETES_ELIMINAR_SP(:p1); END;",[':p1'=>$id]));
+        jsonOut(execProc($conn, "BEGIN $pkg.FIDE_PAQUETES_ELIMINAR_SP(:p1); END;", [':p1' => $id]));
         break;
 
     case 'eliminar_factura':
         $id = (int)($_REQUEST['id'] ?? 0);
-        jsonOut(execProc($conn,"BEGIN $pkg.FIDE_FACTURAS_ELIMINAR_SP(:p1); END;",[':p1'=>$id]));
+        jsonOut(execProc($conn, "BEGIN $pkg.FIDE_FACTURAS_ELIMINAR_SP(:p1); END;", [':p1' => $id]));
         break;
 
     case 'eliminar_servicio':
         $id = (int)($_REQUEST['id'] ?? 0);
-        jsonOut(execProc($conn,"BEGIN $pkg.FIDE_SERVICIOS_ELIMINAR_SP(:p1); END;",[':p1'=>$id]));
+        jsonOut(execProc($conn, "BEGIN $pkg.FIDE_SERVICIOS_ELIMINAR_SP(:p1); END;", [':p1' => $id]));
         break;
 
     case 'eliminar_evento':
         $id = (int)($_REQUEST['id'] ?? 0);
-        jsonOut(execProc($conn,"BEGIN $pkg.FIDE_EVENTOS_ELIMINAR_SP(:p1); END;",[':p1'=>$id]));
+        jsonOut(execProc($conn, "BEGIN $pkg.FIDE_EVENTOS_ELIMINAR_SP(:p1); END;", [':p1' => $id]));
         break;
 
     case 'eliminar_vehiculo':
         $placa = strtoupper(trim($_REQUEST['placa'] ?? ''));
-        jsonOut(execProc($conn,"BEGIN $pkg.FIDE_VEHICULOS_ELIMINAR_SP(:p1); END;",[':p1'=>$placa]));
+        jsonOut(execProc($conn, "BEGIN $pkg.FIDE_VEHICULOS_ELIMINAR_SP(:p1); END;", [':p1' => $placa]));
         break;
-// ── Todos los conteos de una persona (residente o guardia) ──────────────
+
     case 'stats_persona':
         $id = (int)($_REQUEST['id_persona'] ?? 0);
-        if (!$id) { jsonOut(['error' => true, 'mensaje' => 'id_persona requerido']); break; }
-        $callFn = function($func, $param) use ($conn, $pkg) {
+        if (!$id) {
+            jsonOut(['error' => true, 'mensaje' => 'id_persona requerido']);
+            break;
+        }
+        $callFn = function ($func, $param) use ($conn, $pkg) {
             $rows = fetchAll($conn, "SELECT {$pkg}.{$func}(:p) AS TOTAL FROM DUAL", [':p' => $param]);
             return (int)($rows[0]['TOTAL'] ?? 0);
         };
@@ -917,12 +1032,14 @@ case 'marcar_paquete_entregado':
             'turnos'           => $callFn('FIDE_TOTAL_TURNOS_GUARDIA_FN',     $id),
         ]);
         break;
- 
-    // ── Todos los conteos de una residencia ────────────────────────────────
+
     case 'stats_residencia':
         $id = (int)($_REQUEST['id_residencia'] ?? 0);
-        if (!$id) { jsonOut(['error' => true, 'mensaje' => 'id_residencia requerido']); break; }
-        $callFn = function($func, $param) use ($conn, $pkg) {
+        if (!$id) {
+            jsonOut(['error' => true, 'mensaje' => 'id_residencia requerido']);
+            break;
+        }
+        $callFn = function ($func, $param) use ($conn, $pkg) {
             $rows = fetchAll($conn, "SELECT {$pkg}.{$func}(:p) AS TOTAL FROM DUAL", [':p' => $param]);
             return (int)($rows[0]['TOTAL'] ?? 0);
         };
@@ -932,17 +1049,16 @@ case 'marcar_paquete_entregado':
             'residentes' => $callFn('FIDE_TOTAL_RESIDENTES_RESIDENCIA_FN', $id),
         ]);
         break;
- 
-    // ── Desglose de facturas por estado, tipo de pago y forma de pago ──────
+
     case 'stats_facturas':
-        $callFn = function($func, $param) use ($conn, $pkg) {
+        $callFn = function ($func, $param) use ($conn, $pkg) {
             $rows = fetchAll($conn, "SELECT {$pkg}.{$func}(:p) AS TOTAL FROM DUAL", [':p' => $param]);
             return (int)($rows[0]['TOTAL'] ?? 0);
         };
         $estados    = fetchAll($conn, "SELECT ID_ESTADO,    NOMBRE_ESTADO FROM FIDE_LISTAR_ESTADOS_V");
         $tiposPago  = fetchAll($conn, "SELECT ID_TIPO_PAGO, TIPO          FROM FIDE_LISTAR_TIPOS_PAGO_V");
         $formasPago = fetchAll($conn, "SELECT ID_FORMA_PAGO, FORMA        FROM FIDE_LISTAR_FORMAS_PAGO_V");
- 
+
         $porEstado = [];
         foreach ($estados as $e) {
             $t = $callFn('FIDE_TOTAL_FACTURAS_ESTADO_FN', $e['ID_ESTADO']);
@@ -964,10 +1080,9 @@ case 'marcar_paquete_entregado':
             'por_forma_pago' => $porFormaPago,
         ]);
         break;
- 
-    // ── Conteo de servicios por tipo ────────────────────────────────────────
+
     case 'stats_servicios_tipo':
-        $callFn = function($func, $param) use ($conn, $pkg) {
+        $callFn = function ($func, $param) use ($conn, $pkg) {
             $rows = fetchAll($conn, "SELECT {$pkg}.{$func}(:p) AS TOTAL FROM DUAL", [':p' => $param]);
             return (int)($rows[0]['TOTAL'] ?? 0);
         };
@@ -981,10 +1096,9 @@ case 'marcar_paquete_entregado':
         }
         jsonOut($result);
         break;
- 
-    // ── Conteo de eventos por tipo ──────────────────────────────────────────
+
     case 'stats_eventos_tipo':
-        $callFn = function($func, $param) use ($conn, $pkg) {
+        $callFn = function ($func, $param) use ($conn, $pkg) {
             $rows = fetchAll($conn, "SELECT {$pkg}.{$func}(:p) AS TOTAL FROM DUAL", [':p' => $param]);
             return (int)($rows[0]['TOTAL'] ?? 0);
         };
@@ -998,12 +1112,15 @@ case 'marcar_paquete_entregado':
         }
         jsonOut($result);
         break;
- 
-    // ── Verificar si una residencia tiene residentes antes de eliminarla ────
+
     case 'verificar_residentes_residencia':
         $id = (int)($_REQUEST['id_residencia'] ?? 0);
-        if (!$id) { jsonOut(['error' => true, 'mensaje' => 'id_residencia requerido']); break; }
-        $rows  = fetchAll($conn,
+        if (!$id) {
+            jsonOut(['error' => true, 'mensaje' => 'id_residencia requerido']);
+            break;
+        }
+        $rows  = fetchAll(
+            $conn,
             "SELECT $pkg.FIDE_TOTAL_RESIDENTES_RESIDENCIA_FN(:p) AS TOTAL FROM DUAL",
             [':p' => $id]
         );
@@ -1015,7 +1132,7 @@ case 'marcar_paquete_entregado':
         break;
     default:
         http_response_code(400);
-        jsonOut(['error'=>true,'mensaje'=>"Acción '$accion' no reconocida."]);
+        jsonOut(['error' => true, 'mensaje' => "Acción '$accion' no reconocida."]);
         break;
 }
 
