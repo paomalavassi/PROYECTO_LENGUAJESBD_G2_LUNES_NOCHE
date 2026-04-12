@@ -291,56 +291,150 @@ switch ($accion) {
         jsonOut($r);
         break;
 
-    case 'actualizar_estado_visita':
-        $id          = (int)($_REQUEST['id']     ?? 0);
-        $nuevoEstado = (int)($_REQUEST['estado'] ?? 0);
-        if (!in_array($nuevoEstado, [4, 5, 6])) {
-            jsonOut(['error'=>true,'mensaje'=>'Estado no permitido para guardia.']);
-            break;
-        }
-        if ($nuevoEstado === 4) {
-            $sql = "UPDATE FIDE_VISITAS_TB SET ID_ESTADO=:est, FECHA_SALIDA=NULL WHERE ID_VISITA=:id";
-        } elseif ($nuevoEstado === 5) {
-            $sql = "UPDATE FIDE_VISITAS_TB SET ID_ESTADO=:est, FECHA_SALIDA=SYSDATE WHERE ID_VISITA=:id";
-        } else {
-            $sql = "UPDATE FIDE_VISITAS_TB SET ID_ESTADO=:est WHERE ID_VISITA=:id";
-        }
-        jsonOut(execUpdate($conn, $sql, [':est'=>$nuevoEstado,':id'=>$id]));
-        break;
+ case 'actualizar_estado_visita':
+    $id  = (int)($_POST['id']     ?? 0);
+    $est = (int)($_POST['estado'] ?? 0);
 
-    case 'actualizar_estado_vehiculo':
-        $placa       = strtoupper(trim($_REQUEST['placa']  ?? ''));
-        $nuevoEstado = (int)($_REQUEST['estado'] ?? 0);
-        if (!in_array($nuevoEstado, [4, 5, 6])) {
-            jsonOut(['error'=>true,'mensaje'=>'Estado no permitido para guardia.']);
-            break;
-        }
-        jsonOut(execUpdate($conn,
-            "UPDATE FIDE_VEHICULOS_TB SET ID_ESTADO=:est WHERE PLACA=:placa",
-            [':est'=>$nuevoEstado,':placa'=>$placa]
-        ));
+    if (!in_array($est, [4, 5, 6])) {
+        jsonOut(['error' => true, 'mensaje' => 'Estado no permitido para visita.']);
         break;
+    }
 
-    case 'actualizar_estado_evento':
-        $id          = (int)($_REQUEST['id']     ?? 0);
-        $nuevoEstado = (int)($_REQUEST['estado'] ?? 0);
-        if (!in_array($nuevoEstado, [12, 13, 14, 17])) {
-            jsonOut(['error'=>true,'mensaje'=>'Estado no permitido para guardia.']);
-            break;
-        }
-        jsonOut(execUpdate($conn,
-            "UPDATE FIDE_EVENTOS_TB SET ID_ESTADO=:est WHERE ID_EVENTO=:id",
-            [':est'=>$nuevoEstado,':id'=>$id]
-        ));
-        break;
+    $cur = fetchAll($conn,
+        "SELECT ID_PERSONA, FECHA_INGRESO, FECHA_SALIDA, ID_RESIDENCIA, ROL_ID
+         FROM FIDE_LISTAR_VISITAS_V WHERE ID_VISITA = :id",
+        [':id' => $id]
+    );
 
-    case 'marcar_paquete_entregado':
-        $id = (int)($_REQUEST['id'] ?? 0);
-        jsonOut(execUpdate($conn,
-            "UPDATE FIDE_PAQUETES_TB SET ID_ESTADO=16, FECHA_SALIDA=SYSDATE WHERE ID_PAQUETE=:id",
-            [':id'=>$id]
-        ));
+    if (empty($cur)) {
+        jsonOut(['error' => true, 'mensaje' => 'Visita no encontrada.']);
         break;
+    }
+
+    $fechaSalida = match($est) {
+        4       => null,
+        5       => date('d/m/Y H:i'),   // ← formato DD/MM/YYYY HH24:MI
+        default => $cur[0]['FECHA_SALIDA']
+    };
+
+    $sqlFecha = $fechaSalida
+        ? "TO_DATE(:p4,'DD/MM/YYYY HH24:MI')"
+        : "NULL";
+
+    $sql = "BEGIN $pkg.FIDE_VISITAS_ACTUALIZAR_SP(
+                :p1, :p2,
+                TO_DATE(:p3,'DD/MM/YYYY HH24:MI'),
+                $sqlFecha,
+                :p5, :p6, :p7
+            ); END;";
+
+    $binds = [
+        ':p1' => $id,
+        ':p2' => $cur[0]['ID_PERSONA'],
+        ':p3' => $cur[0]['FECHA_INGRESO'],
+        ':p5' => $cur[0]['ID_RESIDENCIA'],
+        ':p6' => $cur[0]['ROL_ID'],
+        ':p7' => $est,
+    ];
+
+    if ($fechaSalida) {
+        $binds[':p4'] = $fechaSalida;
+    }
+
+    $r = execProc($conn, $sql, $binds);
+    jsonOut($r);
+    break;
+
+case 'actualizar_estado_vehiculo':
+    $placa = strtoupper(trim($_REQUEST['placa'] ?? ''));
+    $est   = (int)($_REQUEST['estado'] ?? 0);
+    if (!in_array($est, [4, 5, 6])) {
+        jsonOut(['error'=>true,'mensaje'=>'Estado no permitido para vehículo.']);
+        break;
+    }
+  
+    $cur = fetchAll($conn,
+        "SELECT DESCRIPCION, ID_TIPO_ESPACIO, ID_PERSONA
+         FROM FIDE_LISTAR_VEHICULOS_V WHERE PLACA = :placa",
+        [':placa'=>$placa]
+    );
+    if (empty($cur)) { jsonOut(['error'=>true,'mensaje'=>'Vehículo no encontrado.']); break; }
+    jsonOut(execProc($conn,
+        "BEGIN $pkg.FIDE_VEHICULOS_ACTUALIZAR_SP(:p1,:p2,:p3,:p4,:p5); END;",
+        [':p1'=>$placa,':p2'=>$cur[0]['DESCRIPCION'],':p3'=>$cur[0]['ID_TIPO_ESPACIO'],':p4'=>$cur[0]['ID_PERSONA'],':p5'=>$est]
+    ));
+    break;
+
+case 'actualizar_estado_evento':
+    $id  = (int)($_POST['id']     ?? 0);
+    $est = (int)($_POST['estado'] ?? 0);
+
+    if (!in_array($est, [12, 13, 14, 17])) {
+        jsonOut(['error' => true, 'mensaje' => 'Estado no permitido para evento.']);
+        break;
+    }
+
+    $cur = fetchAll($conn,
+        "SELECT ID_EVENTO, DESCR_EVENTO, FECHA_EVENTO, ID_TIPO_EVENTO, ID_TIPO_ESPACIO
+         FROM FIDE_LISTAR_EVENTOS_V WHERE ID_EVENTO = :id",
+        [':id' => $id]
+    );
+
+    if (empty($cur)) {
+        jsonOut(['error' => true, 'mensaje' => 'Evento no encontrado.']);
+        break;
+    }
+
+    $r = execProc($conn,
+        "BEGIN $pkg.FIDE_EVENTOS_ACTUALIZAR_SP(
+            :p1, :p2,
+            TO_DATE(:p3,'DD/MM/YYYY HH24:MI'),
+            :p4, :p5, :p6
+        ); END;",
+        [
+            ':p1' => $cur[0]['ID_EVENTO'],
+            ':p2' => $cur[0]['DESCR_EVENTO'],
+            ':p3' => $cur[0]['FECHA_EVENTO'],
+            ':p4' => $cur[0]['ID_TIPO_EVENTO'],
+            ':p5' => $cur[0]['ID_TIPO_ESPACIO'],
+            ':p6' => $est,
+        ]
+    );
+    jsonOut($r);
+    break;
+
+case 'marcar_paquete_entregado':
+    $id = (int)($_POST['id'] ?? 0);
+
+    $cur = fetchAll($conn,
+        "SELECT ID_PERSONA, ID_RESIDENCIA, FECHA_INGRESO
+         FROM FIDE_LISTAR_PAQUETES_V WHERE ID_PAQUETE = :id",
+        [':id' => $id]
+    );
+
+    if (empty($cur)) {
+        jsonOut(['error' => true, 'mensaje' => 'Paquete no encontrado.']);
+        break;
+    }
+
+    $r = execProc($conn,
+        "BEGIN $pkg.FIDE_PAQUETES_ACTUALIZAR_SP(
+            :p1, :p2, :p3,
+            TO_DATE(:p4,'DD/MM/YYYY HH24:MI'),
+            TO_DATE(:p5,'DD/MM/YYYY HH24:MI'),
+            :p6
+        ); END;",
+        [
+            ':p1' => $id,
+            ':p2' => $cur[0]['ID_PERSONA'],
+            ':p3' => $cur[0]['ID_RESIDENCIA'],
+            ':p4' => $cur[0]['FECHA_INGRESO'],
+            ':p5' => date('d/m/Y H:i'),        // ← formato corregido
+            ':p6' => 16,
+        ]
+    );
+    jsonOut($r);
+    break;
 
     case 'listar_turnos':
         $idPersona = (int)($_REQUEST['id_persona'] ?? 0);
