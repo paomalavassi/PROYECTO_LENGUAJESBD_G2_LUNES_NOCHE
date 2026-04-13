@@ -63,6 +63,53 @@ function jsonOut($data): void
     echo json_encode($data, JSON_UNESCAPED_UNICODE);
 }
 
+function toDmyHi(?string $value): ?string
+{
+    if ($value === null) return null;
+    $value = trim($value);
+    if ($value === '') return null;
+
+    $formats = [
+        'd/m/Y H:i',
+        'Y-m-d\TH:i',
+        'Y-m-d H:i',
+        'Y-m-d',
+        'd-M-y H:i:s',
+        'd-M-y h.i.s A',
+        'd-M-Y H:i:s',
+        'd-M-Y h.i.s A',
+    ];
+
+    foreach ($formats as $fmt) {
+        $dt = DateTime::createFromFormat($fmt, $value);
+        if ($dt instanceof DateTime) {
+            return $dt->format('d/m/Y H:i');
+        }
+    }
+
+    $ts = strtotime($value);
+    if ($ts !== false) {
+        return date('d/m/Y H:i', $ts);
+    }
+
+    return null;
+}
+
+function splitNombreCompleto(string $nombreCompleto): array
+{
+    $nombreCompleto = trim(preg_replace('/\s+/', ' ', $nombreCompleto));
+    if ($nombreCompleto === '') {
+        return ['', '', ''];
+    }
+
+    $partes = explode(' ', $nombreCompleto, 3);
+    return [
+        $partes[0] ?? '',
+        $partes[1] ?? '',
+        $partes[2] ?? '',
+    ];
+}
+
 function execUpdate($conn, string $sql, array $binds): array
 {
     $stmt = oci_parse($conn, $sql);
@@ -334,7 +381,10 @@ switch ($accion) {
 
         $cur = fetchAll(
             $conn,
-            "SELECT ID_PERSONA, FECHA_INGRESO, FECHA_SALIDA, ID_RESIDENCIA, ROL_ID
+            "SELECT ID_PERSONA,
+                    TO_CHAR(FECHA_INGRESO,'DD/MM/YYYY HH24:MI') AS FECHA_INGRESO,
+                    TO_CHAR(FECHA_SALIDA,'DD/MM/YYYY HH24:MI')  AS FECHA_SALIDA,
+                    ID_RESIDENCIA, ROL_ID
          FROM FIDE_LISTAR_VISITAS_V WHERE ID_VISITA = :id",
             [':id' => $id]
         );
@@ -347,8 +397,14 @@ switch ($accion) {
         $fechaSalida = match ($est) {
             4       => null,
             5       => date('d/m/Y H:i'), // ← formato DD/MM/YYYY HH24:MI
-            default => $cur[0]['FECHA_SALIDA']
+            default => toDmyHi($cur[0]['FECHA_SALIDA'])
         };
+
+        $fechaIngreso = toDmyHi($cur[0]['FECHA_INGRESO']);
+        if (!$fechaIngreso) {
+            jsonOut(['error' => true, 'mensaje' => 'Fecha de ingreso inválida para actualizar la visita.']);
+            break;
+        }
 
         $sqlFecha = $fechaSalida
             ? "TO_DATE(:p4,'DD/MM/YYYY HH24:MI')"
@@ -364,7 +420,7 @@ switch ($accion) {
         $binds = [
             ':p1' => $id,
             ':p2' => $cur[0]['ID_PERSONA'],
-            ':p3' => $cur[0]['FECHA_INGRESO'],
+            ':p3' => $fechaIngreso,
             ':p5' => $cur[0]['ID_RESIDENCIA'],
             ':p6' => $cur[0]['ROL_ID'],
             ':p7' => $est,
@@ -414,13 +470,21 @@ switch ($accion) {
 
         $cur = fetchAll(
             $conn,
-            "SELECT ID_EVENTO, DESCR_EVENTO, FECHA_EVENTO, ID_TIPO_EVENTO, ID_TIPO_ESPACIO
+            "SELECT ID_EVENTO, DESCR_EVENTO,
+                    TO_CHAR(FECHA_EVENTO,'DD/MM/YYYY HH24:MI') AS FECHA_EVENTO,
+                    ID_TIPO_EVENTO, ID_TIPO_ESPACIO
          FROM FIDE_LISTAR_EVENTOS_V WHERE ID_EVENTO = :id",
             [':id' => $id]
         );
 
         if (empty($cur)) {
             jsonOut(['error' => true, 'mensaje' => 'Evento no encontrado.']);
+            break;
+        }
+
+        $fechaEvento = toDmyHi($cur[0]['FECHA_EVENTO']);
+        if (!$fechaEvento) {
+            jsonOut(['error' => true, 'mensaje' => 'Fecha de evento inválida.']);
             break;
         }
 
@@ -434,7 +498,7 @@ switch ($accion) {
             [
                 ':p1' => $cur[0]['ID_EVENTO'],
                 ':p2' => $cur[0]['DESCR_EVENTO'],
-                ':p3' => $cur[0]['FECHA_EVENTO'],
+                ':p3' => $fechaEvento,
                 ':p4' => $cur[0]['ID_TIPO_EVENTO'],
                 ':p5' => $cur[0]['ID_TIPO_ESPACIO'],
                 ':p6' => $est,
@@ -448,13 +512,20 @@ switch ($accion) {
 
         $cur = fetchAll(
             $conn,
-            "SELECT ID_PERSONA, ID_RESIDENCIA, FECHA_INGRESO
+            "SELECT ID_PERSONA, ID_RESIDENCIA,
+                    TO_CHAR(FECHA_INGRESO,'DD/MM/YYYY HH24:MI') AS FECHA_INGRESO
          FROM FIDE_LISTAR_PAQUETES_V WHERE ID_PAQUETE = :id",
             [':id' => $id]
         );
 
         if (empty($cur)) {
             jsonOut(['error' => true, 'mensaje' => 'Paquete no encontrado.']);
+            break;
+        }
+
+        $fechaIngreso = toDmyHi($cur[0]['FECHA_INGRESO']);
+        if (!$fechaIngreso) {
+            jsonOut(['error' => true, 'mensaje' => 'Fecha de ingreso inválida para paquete.']);
             break;
         }
 
@@ -470,7 +541,7 @@ switch ($accion) {
                 ':p1' => $id,
                 ':p2' => $cur[0]['ID_PERSONA'],
                 ':p3' => $cur[0]['ID_RESIDENCIA'],
-                ':p4' => $cur[0]['FECHA_INGRESO'],
+                ':p4' => $fechaIngreso,
                 ':p5' => date('d/m/Y H:i'), // ← formato DD/MM/YYYY HH24:MI
                 ':p6' => 16,
             ]
@@ -556,6 +627,9 @@ switch ($accion) {
         break;
 
     case 'insertar_guardia':
+        $cedulaRaw  = trim((string)($_POST['cedula'] ?? ''));
+        $cedulaNorm = preg_replace('/\D+/', '', $cedulaRaw);
+        $idPersona  = (int)$cedulaNorm;
         $nombre     = $_POST['nombre']           ?? '';
         $pat        = $_POST['apellido_paterno'] ?? '';
         $mat        = $_POST['apellido_materno'] ?? '';
@@ -567,6 +641,16 @@ switch ($accion) {
 
         if (!$usuario || !$contrasena) {
             jsonOut(['error' => true, 'mensaje' => 'El usuario y la contraseña son requeridos.']);
+            break;
+        }
+        if (!$idPersona) {
+            jsonOut(['error' => true, 'mensaje' => 'La cédula es requerida y debe ser numérica.']);
+            break;
+        }
+
+        $dupCed = fetchAll($conn, "SELECT 1 FROM FIDE_PERSONAS_DETALLE_V WHERE ID_PERSONA = :id", [':id' => $idPersona]);
+        if (!empty($dupCed)) {
+            jsonOut(['error' => true, 'mensaje' => "La cédula '$cedulaRaw' ya está registrada."]);
             break;
         }
 
@@ -584,17 +668,16 @@ switch ($accion) {
         $idRol = (int)$rolRow[0]['ID_ROL'];
         $hoy   = date('Y-m-d');
 
-        $r1 = execProc(
+        $r1 = execUpdate(
             $conn,
-            "BEGIN $pkg.FIDE_PERSONAS_INSERTAR_SP(:p1,:p2,:p3,TO_DATE(:p4,'YYYY-MM-DD'),:p5,:p6); END;",
-            [':p1' => $nombre, ':p2' => $pat, ':p3' => $mat, ':p4' => $hoy, ':p5' => $idRol, ':p6' => $idEstado]
+            "INSERT INTO FIDE_PERSONAS_TB (ID_PERSONA, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO, FECHA_REGISTRO, ID_ROL, ID_ESTADO)
+             VALUES (:p1, :p2, :p3, :p4, TO_DATE(:p5,'YYYY-MM-DD'), :p6, :p7)",
+            [':p1' => $idPersona, ':p2' => $nombre, ':p3' => $pat, ':p4' => $mat, ':p5' => $hoy, ':p6' => $idRol, ':p7' => $idEstado]
         );
         if ($r1['error'] ?? false) {
             jsonOut($r1);
             break;
         }
-
-        $idPersona = currVal('FIDE_PERSONAS_SEQ', $conn);
 
         execProc(
             $conn,
@@ -609,6 +692,9 @@ switch ($accion) {
         break;
 
     case 'insertar_residente':
+        $cedulaRaw    = trim((string)($_POST['cedula'] ?? ''));
+        $cedulaNorm   = preg_replace('/\D+/', '', $cedulaRaw);
+        $idPersona    = (int)$cedulaNorm;
         $nombre       = $_POST['nombre']           ?? '';
         $pat          = $_POST['apellido_paterno'] ?? '';
         $mat          = $_POST['apellido_materno'] ?? '';
@@ -616,6 +702,17 @@ switch ($accion) {
         $correo       = $_POST['correo']           ?? '';
         $idResidencia = (int)($_POST['id_residencia'] ?? 0);
         $idEstado     = (int)($_POST['id_estado']     ?? 1);
+
+        if (!$idPersona) {
+            jsonOut(['error' => true, 'mensaje' => 'La cédula es requerida y debe ser numérica.']);
+            break;
+        }
+
+        $dupCed = fetchAll($conn, "SELECT 1 FROM FIDE_PERSONAS_DETALLE_V WHERE ID_PERSONA = :id", [':id' => $idPersona]);
+        if (!empty($dupCed)) {
+            jsonOut(['error' => true, 'mensaje' => "La cédula '$cedulaRaw' ya está registrada."]);
+            break;
+        }
 
         $rolRow = fetchAll($conn, "SELECT ID_ROL FROM FIDE_LISTAR_ROLES_V WHERE UPPER(ROL) LIKE '%RESID%' AND ROWNUM=1");
         if (empty($rolRow)) {
@@ -625,17 +722,16 @@ switch ($accion) {
         $idRol = (int)$rolRow[0]['ID_ROL'];
         $hoy   = date('Y-m-d');
 
-        $r1 = execProc(
+        $r1 = execUpdate(
             $conn,
-            "BEGIN $pkg.FIDE_PERSONAS_INSERTAR_SP(:p1,:p2,:p3,TO_DATE(:p4,'YYYY-MM-DD'),:p5,:p6); END;",
-            [':p1' => $nombre, ':p2' => $pat, ':p3' => $mat, ':p4' => $hoy, ':p5' => $idRol, ':p6' => $idEstado]
+            "INSERT INTO FIDE_PERSONAS_TB (ID_PERSONA, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO, FECHA_REGISTRO, ID_ROL, ID_ESTADO)
+             VALUES (:p1, :p2, :p3, :p4, TO_DATE(:p5,'YYYY-MM-DD'), :p6, :p7)",
+            [':p1' => $idPersona, ':p2' => $nombre, ':p3' => $pat, ':p4' => $mat, ':p5' => $hoy, ':p6' => $idRol, ':p7' => $idEstado]
         );
         if ($r1['error'] ?? false) {
             jsonOut($r1);
             break;
         }
-
-        $idPersona = currVal('FIDE_PERSONAS_SEQ', $conn);
 
         if ($tel)          execProc($conn, "BEGIN $pkg.FIDE_TELEFONOS_INSERTAR_SP(:p1,:p2,:p3); END;", [':p1' => $idPersona, ':p2' => $tel, ':p3' => 1]);
         if ($correo)       execProc($conn, "BEGIN $pkg.FIDE_CORREOS_INSERTAR_SP(:p1,:p2,:p3); END;",   [':p1' => $idPersona, ':p2' => $correo, ':p3' => 1]);
@@ -660,6 +756,11 @@ switch ($accion) {
 
     case 'insertar_visita':
         $idPersona    = (int)($_POST['id_persona']    ?? 0);
+        $cedulaRaw    = trim((string)($_POST['cedula'] ?? ''));
+        $cedulaNorm   = preg_replace('/\D+/', '', $cedulaRaw);
+        if (!$idPersona && $cedulaNorm !== '') {
+            $idPersona = (int)$cedulaNorm;
+        }
         $fechaIngreso = $_POST['fecha_ingreso'] ?? '';
         $fechaSalida  = $_POST['fecha_salida']  ?? '';
         $idResidencia = (int)($_POST['id_residencia'] ?? 0);
@@ -668,23 +769,34 @@ switch ($accion) {
         if (!$fechaIngreso) $fechaIngreso = date('Y-m-d H:i');
 
         if (!$idPersona) {
+            jsonOut(['error' => true, 'mensaje' => 'La cédula es requerida y debe ser numérica.']);
+            break;
+        }
+
+        $personaExiste = fetchAll($conn, "SELECT 1 FROM FIDE_PERSONAS_DETALLE_V WHERE ID_PERSONA = :id", [':id' => $idPersona]);
+        if (empty($personaExiste)) {
             $nombreV = trim($_POST['nombre_visitante'] ?? 'Visitante');
-            $partes  = explode(' ', $nombreV, 2);
+            [$n1, $n2, $n3] = splitNombreCompleto($nombreV);
             $rolV    = fetchAll($conn, "SELECT ID_ROL FROM FIDE_LISTAR_ROLES_V WHERE UPPER(ROL) LIKE '%VISIT%' AND ROWNUM=1");
             $rolVId  = $rolV[0]['ID_ROL'] ?? $idRol;
-            execProc(
+            $rPersona = execUpdate(
                 $conn,
-                "BEGIN $pkg.FIDE_PERSONAS_INSERTAR_SP(:p1,:p2,:p3,TO_DATE(:p4,'YYYY-MM-DD'),:p5,:p6); END;",
+                "INSERT INTO FIDE_PERSONAS_TB (ID_PERSONA, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO, FECHA_REGISTRO, ID_ROL, ID_ESTADO)
+                 VALUES (:p1, :p2, :p3, :p4, TO_DATE(:p5,'YYYY-MM-DD'), :p6, :p7)",
                 [
-                    ':p1' => ($partes[0] ?? $nombreV),
-                    ':p2' => ($partes[1] ?? ''),
-                    ':p3' => '',
-                    ':p4' => date('Y-m-d'),
-                    ':p5' => $rolVId,
-                    ':p6' => $idEstado
+                    ':p1' => $idPersona,
+                    ':p2' => $n1,
+                    ':p3' => $n2,
+                    ':p4' => $n3,
+                    ':p5' => date('Y-m-d'),
+                    ':p6' => $rolVId,
+                    ':p7' => $idEstado
                 ]
             );
-            $idPersona = currVal('FIDE_PERSONAS_SEQ', $conn);
+            if ($rPersona['error'] ?? false) {
+                jsonOut($rPersona);
+                break;
+            }
         }
         if ($fechaSalida) {
             $sql   = "BEGIN $pkg.FIDE_VISITAS_INSERTAR_SP(:p1,TO_DATE(:p2,'YYYY-MM-DD HH24:MI'),TO_DATE(:p3,'YYYY-MM-DD HH24:MI'),:p4,:p5,:p6); END;";
@@ -930,10 +1042,120 @@ switch ($accion) {
         $montoMant  = (float)($_POST['monto_mantenimiento'] ?? 0);
         $idTipoPago = (int)($_POST['id_tipo_pago']        ?? 1);
         $idEstado   = (int)($_POST['id_estado']           ?? 1);
+
+        $existe = fetchAll(
+            $conn,
+            "SELECT 1 FROM FIDE_LISTAR_RESIDENCIAS_VM WHERE ID_RESIDENCIA = :id",
+            [':id' => $id]
+        );
+        if (empty($existe)) {
+            jsonOut(['error' => true, 'mensaje' => 'Residencia no encontrada.']);
+            break;
+        }
+
         $r = execProc(
             $conn,
             "BEGIN $pkg.FIDE_RESIDENCIAS_ACTUALIZAR_SP(:p1,:p2,:p3,:p4,:p5); END;",
             [':p1' => $id, ':p2' => $montoAlq, ':p3' => $montoMant, ':p4' => $idTipoPago, ':p5' => $idEstado]
+        );
+        jsonOut($r);
+        break;
+
+    case 'actualizar_visita':
+        $id           = (int)($_POST['id']              ?? 0);
+        $idPersona    = (int)($_POST['id_persona']      ?? 0);
+        $nombre       = trim($_POST['nombre_visitante'] ?? '');
+        $idResidencia = (int)($_POST['id_residencia']   ?? 0);
+        $idRol        = (int)($_POST['id_rol']          ?? 4);
+        $fechaIngreso = toDmyHi($_POST['fecha_ingreso'] ?? '') ?? date('d/m/Y H:i');
+        $fechaSalida  = toDmyHi($_POST['fecha_salida']  ?? '');
+        $idEstado     = (int)($_POST['id_estado']       ?? 4);
+
+        $existe = fetchAll(
+            $conn,
+            "SELECT ID_PERSONA FROM FIDE_LISTAR_VISITAS_V WHERE ID_VISITA = :id",
+            [':id' => $id]
+        );
+        if (empty($existe)) {
+            jsonOut(['error' => true, 'mensaje' => 'Visita no encontrada.']);
+            break;
+        }
+
+        if ($idPersona && $nombre !== '') {
+            [$n1, $n2, $n3] = splitNombreCompleto($nombre);
+            $personaBase = fetchAll(
+                $conn,
+                "SELECT ID_ROL, TO_CHAR(FECHA_REGISTRO,'YYYY-MM-DD') AS FR FROM FIDE_PERSONAS_DETALLE_V WHERE ID_PERSONA = :pid",
+                [':pid' => $idPersona]
+            );
+            if (!empty($personaBase)) {
+                $rPersona = execProc(
+                    $conn,
+                    "BEGIN $pkg.FIDE_PERSONAS_ACTUALIZAR_SP(:p1,:p2,:p3,:p4,TO_DATE(:p5,'YYYY-MM-DD'),:p6,:p7); END;",
+                    [
+                        ':p1' => $idPersona,
+                        ':p2' => $n1,
+                        ':p3' => $n2,
+                        ':p4' => $n3,
+                        ':p5' => $personaBase[0]['FR'],
+                        ':p6' => $personaBase[0]['ID_ROL'],
+                        ':p7' => $idEstado,
+                    ]
+                );
+                if ($rPersona['error'] ?? false) {
+                    jsonOut($rPersona);
+                    break;
+                }
+            }
+        }
+
+        $r = execProc(
+            $conn,
+            "BEGIN $pkg.FIDE_VISITAS_ACTUALIZAR_SP(:p1,:p2,TO_DATE(:p3,'DD/MM/YYYY HH24:MI')," .
+            ($fechaSalida ? "TO_DATE(:p4,'DD/MM/YYYY HH24:MI')" : "NULL") .
+            ",:p5,:p6,:p7); END;",
+            [
+                ':p1' => $id,
+                ':p2' => $idPersona,
+                ':p3' => $fechaIngreso,
+                ':p5' => $idResidencia,
+                ':p6' => $idRol,
+                ':p7' => $idEstado,
+            ] + ($fechaSalida ? [':p4' => $fechaSalida] : [])
+        );
+        jsonOut($r);
+        break;
+
+    case 'actualizar_vehiculo':
+        $placa       = strtoupper(trim($_POST['placa'] ?? ''));
+        $descripcion = $_POST['descripcion'] ?? '';
+        $idPersona   = (int)($_POST['id_persona'] ?? 0);
+        $idEstado    = (int)($_POST['id_estado'] ?? 0);
+
+        $cur = fetchAll(
+            $conn,
+            "SELECT ID_TIPO_ESPACIO, ID_PERSONA, ID_ESTADO FROM FIDE_LISTAR_VEHICULOS_V WHERE PLACA = :placa",
+            [':placa' => $placa]
+        );
+        if (empty($cur)) {
+            jsonOut(['error' => true, 'mensaje' => 'Vehículo no encontrado.']);
+            break;
+        }
+
+        if (!$idEstado) {
+            $idEstado = (int)($cur[0]['ID_ESTADO'] ?? 1);
+        }
+
+        $r = execProc(
+            $conn,
+            "BEGIN $pkg.FIDE_VEHICULOS_ACTUALIZAR_SP(:p1,:p2,:p3,:p4,:p5); END;",
+            [
+                ':p1' => $placa,
+                ':p2' => $descripcion,
+                ':p3' => $cur[0]['ID_TIPO_ESPACIO'],
+                ':p4' => $idPersona ?: $cur[0]['ID_PERSONA'],
+                ':p5' => $idEstado,
+            ]
         );
         jsonOut($r);
         break;
@@ -945,9 +1167,14 @@ switch ($accion) {
         $idTipoServicio = (int)($_POST['id_tipo_servicio']   ?? 1);
         $idTipoEvento   = (int)($_POST['id_tipo_evento']     ?? 1);
         $idEstado       = (int)($_POST['id_estado']          ?? 1);
-        if ($fechaSalida) {
-            $sql   = "BEGIN $pkg.FIDE_SERVICIOS_ACTUALIZAR_SP(:p1,:p2,TO_DATE(:p3,'YYYY-MM-DD'),:p4,:p5,:p6); END;";
-            $binds = [':p1' => $id, ':p2' => $descr, ':p3' => $fechaSalida, ':p4' => $idTipoServicio, ':p5' => $idTipoEvento, ':p6' => $idEstado];
+        $fechaSalidaFmt = toDmyHi($fechaSalida);
+        if ($fechaSalida && !$fechaSalidaFmt) {
+            jsonOut(['error' => true, 'mensaje' => 'Formato de fecha inválido para servicio.']);
+            break;
+        }
+        if ($fechaSalidaFmt) {
+            $sql   = "BEGIN $pkg.FIDE_SERVICIOS_ACTUALIZAR_SP(:p1,:p2,TO_DATE(:p3,'DD/MM/YYYY HH24:MI'),:p4,:p5,:p6); END;";
+            $binds = [':p1' => $id, ':p2' => $descr, ':p3' => $fechaSalidaFmt, ':p4' => $idTipoServicio, ':p5' => $idTipoEvento, ':p6' => $idEstado];
         } else {
             $sql   = "BEGIN $pkg.FIDE_SERVICIOS_ACTUALIZAR_SP(:p1,:p2,NULL,:p4,:p5,:p6); END;";
             $binds = [':p1' => $id, ':p2' => $descr, ':p4' => $idTipoServicio, ':p5' => $idTipoEvento, ':p6' => $idEstado];
@@ -962,10 +1189,15 @@ switch ($accion) {
         $idTipoEvento  = (int)($_POST['id_tipo_evento']   ?? 1);
         $idTipoEspacio = (int)($_POST['id_tipo_espacio']  ?? 1);
         $idEstado      = (int)($_POST['id_estado']        ?? 1);
+        $fechaEventoFmt = toDmyHi($fechaEvento);
+        if (!$fechaEventoFmt) {
+            jsonOut(['error' => true, 'mensaje' => 'Formato de fecha inválido para evento.']);
+            break;
+        }
         $r = execProc(
             $conn,
             "BEGIN $pkg.FIDE_EVENTOS_ACTUALIZAR_SP(:p1,:p2,TO_DATE(:p3,'DD/MM/YYYY HH24:MI'),:p4,:p5,:p6); END;",
-            [':p1' => $id, ':p2' => $descr, ':p3' => $fechaEvento, ':p4' => $idTipoEvento, ':p5' => $idTipoEspacio, ':p6' => $idEstado]
+            [':p1' => $id, ':p2' => $descr, ':p3' => $fechaEventoFmt, ':p4' => $idTipoEvento, ':p5' => $idTipoEspacio, ':p6' => $idEstado]
         );
         jsonOut($r);
         break;
@@ -1128,6 +1360,31 @@ switch ($accion) {
         jsonOut([
             'total_residentes' => $total,
             'puede_eliminar'   => ($total === 0),
+        ]);
+        break;
+
+    case 'verificar_cedula':
+        $cedulaRaw  = trim((string)($_REQUEST['cedula'] ?? ''));
+        $cedulaNorm = preg_replace('/\D+/', '', $cedulaRaw);
+
+        if ($cedulaRaw === '') {
+            jsonOut(['disponible' => true, 'existe' => false]);
+            break;
+        }
+
+        $rows = fetchAll(
+            $conn,
+            "SELECT 1
+             FROM   FIDE_PERSONAS_DETALLE_V
+             WHERE  (TO_CHAR(ID_PERSONA) = :raw OR TO_CHAR(ID_PERSONA) = :norm)
+               AND  ROWNUM = 1",
+            [':raw' => $cedulaRaw, ':norm' => ($cedulaNorm !== '' ? $cedulaNorm : $cedulaRaw)]
+        );
+
+        $existe = !empty($rows);
+        jsonOut([
+            'disponible' => !$existe,
+            'existe'     => $existe,
         ]);
         break;
     default:
