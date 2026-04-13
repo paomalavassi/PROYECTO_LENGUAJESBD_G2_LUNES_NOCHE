@@ -194,7 +194,11 @@ async function guardarGuardia(e) {
 
     if (!editId && data.cedula) {
         const check = await apiGet('verificar_cedula', { cedula: data.cedula });
-        if (!check.disponible) {
+        if (check?.error) {
+            mostrarMensaje(form.closest('.bloque-formulario'), 'Error al validar cédula: ' + (check.mensaje || 'respuesta inválida'), true);
+            return;
+        }
+        if (check?.disponible === false) {
             mostrarMensaje(form.closest('.bloque-formulario'), `La cédula '${data.cedula}' ya está registrada.`, true);
             return;
         }
@@ -282,7 +286,11 @@ async function guardarResidente(e) {
 
     if (!editId && data.cedula) {
         const check = await apiGet('verificar_cedula', { cedula: data.cedula });
-        if (!check.disponible) {
+        if (check?.error) {
+            mostrarMensaje(form.closest('.bloque-formulario'), 'Error al validar cédula: ' + (check.mensaje || 'respuesta inválida'), true);
+            return;
+        }
+        if (check?.disponible === false) {
             mostrarMensaje(form.closest('.bloque-formulario'), `La cédula '${data.cedula}' ya está registrada.`, true);
             return;
         }

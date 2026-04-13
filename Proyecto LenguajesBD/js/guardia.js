@@ -151,6 +151,7 @@ function editarVisita(id, idPersona, visitante, idResidencia, idRol, fechaIngres
     if (inputs[5]) inputs[5].value = fechaSalida;
     if (inputs[6]) inputs[6].value = idEstado;
     form.dataset.editId = id;
+    form.dataset.editPersona = idPersona;
     const titulo = form.closest('.bloque-formulario').querySelector('h3');
     if (titulo) titulo.textContent = '✎ Editar Visitante';
     mostrarCancelarEdicion(form);
@@ -167,13 +168,19 @@ async function guardarVisita(e) {
     if (editId) {
         const idEstado = parseInt(inputs[6]?.value ?? 0);
         if (!idEstado) { mostrarMensaje(form.closest('.bloque-formulario'), 'Seleccione un estado.', true); return; }
-        if (![4,5,6].includes(idEstado)) {
-            mostrarMensaje(form.closest('.bloque-formulario'), 'Solo puede usar estados: Adentro, Salida o Vetado.', true);
-            return;
-        }
-        const r = await api({ accion:'actualizar_estado_visita', id:editId, estado:idEstado });
+        const r = await api({
+            accion: 'actualizar_visita',
+            id: editId,
+            id_persona: form.dataset.editPersona || inputs[0].value.trim(),
+            nombre_visitante: inputs[1].value.trim(),
+            id_residencia: inputs[2].value,
+            id_rol: inputs[3].value,
+            fecha_ingreso: inputs[4].value,
+            fecha_salida: inputs[5].value,
+            id_estado: idEstado,
+        });
         if (r.error) { mostrarMensaje(form.closest('.bloque-formulario'), 'Error: ' + r.mensaje, true); return; }
-        mostrarMensaje(form.closest('.bloque-formulario'), 'Estado actualizado.');
+        mostrarMensaje(form.closest('.bloque-formulario'), 'Visitante actualizado.');
         cancelarEdicionVisita();
         cargarVisitantes();
         return;
@@ -183,7 +190,11 @@ async function guardarVisita(e) {
 
     if (cedula) {
         const check = await apiGet('verificar_cedula', { cedula });
-        if (!check.disponible) {
+        if (check?.error) {
+            mostrarMensaje(form.closest('.bloque-formulario'), 'Error al validar cédula: ' + (check.mensaje || 'respuesta inválida'), true);
+            return;
+        }
+        if (check?.disponible === false) {
             mostrarMensaje(form.closest('.bloque-formulario'), `La cédula '${cedula}' ya está registrada.`, true);
             return;
         }
@@ -219,7 +230,7 @@ async function guardarVisita(e) {
 function cancelarEdicionVisita() {
     const form = document.getElementById('form-visitante');
     if (!form) return;
-    form.reset(); delete form.dataset.editId;
+    form.reset(); delete form.dataset.editId; delete form.dataset.editPersona;
     // Restaurar campo cédula si fue bloqueado en modo edición
     const inputs = form.querySelectorAll('input, select, textarea');
     inputs[0].removeAttribute('readonly');
@@ -323,7 +334,15 @@ function editarVehiculoResidente(placa, descripcion, idPersona, idEstado) {
     const selPer = document.getElementById('sel-veh-res-persona');
     if (selPer) selPer.value = idPersona;
     const selEst = document.getElementById('sel-veh-res-estado');
-    if (selEst) selEst.value = idEstado;
+    if (selEst) {
+        const estadoActual = String(idEstado ?? '');
+        const existeEstadoActual = Array.from(selEst.options).some(o => String(o.value) === estadoActual);
+        if (existeEstadoActual) {
+            selEst.value = estadoActual;
+        } else {
+            selEst.value = '';
+        }
+    }
     form.dataset.editPlaca = placa;
     resetFormTitulo(form, '✎ Editar Vehículo de Residente');
     mostrarCancelarEdicion(form);
@@ -343,12 +362,15 @@ async function guardarVehiculoResidente(e) {
     }
 
     if (form.dataset.editPlaca) {
-        if (!['4','5','6'].includes(String(idEstado))) {
-            mostrarMensaje(form.closest('.bloque-formulario'), 'Guardias solo pueden poner: Adentro, Afuera o Vetado.', true); return;
-        }
-        const r = await api({ accion:'actualizar_estado_vehiculo', placa, estado: idEstado });
+        const r = await api({
+            accion: 'actualizar_vehiculo',
+            placa,
+            descripcion: inputs[1].value.trim(),
+            id_persona: document.getElementById('sel-veh-res-persona')?.value ?? '',
+            id_estado: idEstado,
+        });
         if (r.error) { mostrarMensaje(form.closest('.bloque-formulario'), 'Error: ' + r.mensaje, true); return; }
-        mostrarMensaje(form.closest('.bloque-formulario'), 'Estado actualizado.');
+        mostrarMensaje(form.closest('.bloque-formulario'), 'Vehículo actualizado.');
         form.reset(); inputs[0].readOnly = false;
         delete form.dataset.editPlaca;
         resetFormTitulo(form, 'Registrar Vehículo de Residente');
@@ -466,7 +488,7 @@ async function cargarEventos() {
                     ${idProc  ? `<button class="btn-acc btn-proceso"  onclick="cambiarEstadoEvento(${ev.ID_EVENTO},${idProc})"  title="En Proceso">⚙ Proceso</button>` : ''}
                     ${idRes   ? `<button class="btn-acc btn-resuelto" onclick="cambiarEstadoEvento(${ev.ID_EVENTO},${idRes})"   title="Resuelto">✓ Solucionado</button>` : ''}
                     ${idFinal ? `<button class="btn-acc btn-final"    onclick="cambiarEstadoEvento(${ev.ID_EVENTO},${idFinal})" title="Finalizado">⬛ Final</button>` : ''}
-                    <button class="btn-acc btn-editar" onclick="editarEvento(${ev.ID_EVENTO},'${(ev.DESCR_EVENTO||'').replace(/'/g,"\\'")}',${ev.ID_TIPO_EVENTO??1},'${ev.FECHA_EVENTO??''}',${ev.ID_ESTADO??1})">✎ Editar</button>
+                    <button class="btn-acc btn-editar" onclick="editarEvento(${ev.ID_EVENTO},'${(ev.DESCR_EVENTO||'').replace(/'/g,"\\'")}',${ev.ID_TIPO_EVENTO??1},'${ev.FECHA_EVENTO??''}',${ev.ID_TIPO_ESPACIO??1},${ev.ID_ESTADO??1})">✎ Editar</button>
                 </td>
             </tr>`
         ).join('') || '<tr><td colspan="5">Sin eventos</td></tr>';
@@ -483,7 +505,7 @@ async function cambiarEstadoEvento(id, estado) {
     cargarEventos();
 }
 
-function editarEvento(id, descr, idTipoEvento, fechaEvento, idEstado) {
+function editarEvento(id, descr, idTipoEvento, fechaEvento, idTipoEspacio, idEstado) {
     const form   = document.getElementById('form-evento');
     if (!form) return;
     const inputs = form.querySelectorAll('input, select, textarea');
@@ -492,6 +514,7 @@ function editarEvento(id, descr, idTipoEvento, fechaEvento, idEstado) {
     if (inputs[2]) inputs[2].value = fechaEvento;
     if (inputs[3]) inputs[3].value = idEstado;
     form.dataset.editId = id;
+    form.dataset.tipoEspacio = idTipoEspacio;
     resetFormTitulo(form, '✎ Editar Evento');
     mostrarCancelarEdicion(form);
     form.querySelector('button[type="submit"]').textContent = 'Actualizar';
@@ -507,13 +530,17 @@ async function guardarEvento(e) {
     if (editId) {
         const estado = parseInt(inputs[3]?.value ?? 0);
         if (!estado) { mostrarMensaje(form.closest('.bloque-formulario'), 'Seleccione un estado.', true); return; }
-        const estadosValidos = filtrarEstados(_estadosGuardia, ESTADOS_GUARDIA_SECCION.eventos).map(s => s.ID_ESTADO);
-        if (estadosValidos.length > 0 && !estadosValidos.includes(estado)) {
-            mostrarMensaje(form.closest('.bloque-formulario'), 'Estado no válido para eventos.', true); return;
-        }
-        const r = await api({ accion:'actualizar_estado_evento', id:editId, estado });
+        const r = await api({
+            accion: 'actualizar_evento',
+            id: editId,
+            descr_evento: inputs[0].value.trim(),
+            id_tipo_evento: inputs[1].value,
+            fecha_evento: inputs[2].value,
+            id_estado: estado,
+            id_tipo_espacio: form.dataset.tipoEspacio ?? 1,
+        });
         if (r.error) { mostrarMensaje(form.closest('.bloque-formulario'), 'Error: ' + r.mensaje, true); return; }
-        mostrarMensaje(form.closest('.bloque-formulario'), 'Estado actualizado.');
+        mostrarMensaje(form.closest('.bloque-formulario'), 'Evento actualizado.');
         cancelarEdicionEvento();
         cargarEventos();
         return;
@@ -546,7 +573,7 @@ async function guardarEvento(e) {
 function cancelarEdicionEvento() {
     const form = document.getElementById('form-evento');
     if (!form) return;
-    form.reset(); delete form.dataset.editId;
+    form.reset(); delete form.dataset.editId; delete form.dataset.tipoEspacio;
     resetFormTitulo(form, 'Registrar Evento');
     ocultarCancelarEdicion(form);
     form.querySelector('button[type="submit"]').textContent = 'Guardar';
