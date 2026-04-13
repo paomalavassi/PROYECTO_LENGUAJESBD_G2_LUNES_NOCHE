@@ -9,12 +9,16 @@ async function api(params) {
     const form = new FormData();
     for (const [k, v] of Object.entries(params)) form.append(k, v ?? '');
     const res = await fetch(API, { method: 'POST', body: form });
-    return res.json();
+    const text = await res.text();
+    try { return JSON.parse(text); }
+    catch (e) { console.error('Respuesta no-JSON del servidor:', text); return { error: true, mensaje: 'Error interno del servidor. Revise la consola.' }; }
 }
 async function apiGet(accion, extra = {}) {
     const qs  = new URLSearchParams({ accion, ...extra });
     const res = await fetch(`${API}?${qs}`);
-    return res.json();
+    const text = await res.text();
+    try { return JSON.parse(text); }
+    catch (e) { console.error('Respuesta no-JSON del servidor:', text); return { error: true, mensaje: 'Error interno del servidor. Revise la consola.' }; }
 }
 
 function estadoBadge(estado) {
@@ -116,7 +120,7 @@ async function cargarVisitantes() {
                     <button class="btn-acc btn-adentro" onclick="cambiarEstadoVisita(${v.ID_VISITA},4)" title="Registrar ingreso">↓ Dentro</button>
                     <button class="btn-acc btn-salida"  onclick="cambiarEstadoVisita(${v.ID_VISITA},5)" title="Registrar salida">↑ Salida</button>
                     <button class="btn-acc btn-vetar"   onclick="cambiarEstadoVisita(${v.ID_VISITA},6)" title="Vetar visitante">✕ Vetar</button>
-                    <button class="btn-acc btn-editar"  onclick="editarVisita(${v.ID_VISITA},'${(v.VISITANTE||'').replace(/'/g,"\\'")}',${v.ID_RESIDENCIA??0},${v.ROL_ID??0},'${v.FECHA_INGRESO??''}','${v.FECHA_SALIDA??''}',${v.ID_ESTADO??4})">✎ Editar</button>
+                    <button class="btn-acc btn-editar"  onclick="editarVisita(${v.ID_VISITA},${v.ID_PERSONA},'${(v.VISITANTE||'').replace(/'/g,"\\'")}',${v.ID_RESIDENCIA??0},${v.ROL_ID??0},'${v.FECHA_INGRESO??''}','${v.FECHA_SALIDA??''}',${v.ID_ESTADO??4})">✎ Editar</button>
                 </td>
             </tr>`
         ).join('') || '<tr><td colspan="6">Sin visitantes</td></tr>';
@@ -132,16 +136,20 @@ async function cambiarEstadoVisita(id, estado) {
     cargarVisitantes(); cargarResumenGuardia();
 }
 
-function editarVisita(id, visitante, idResidencia, idRol, fechaIngreso, fechaSalida, idEstado) {
+function editarVisita(id, idPersona, visitante, idResidencia, idRol, fechaIngreso, fechaSalida, idEstado) {
     const form = document.getElementById('form-visitante');
     if (!form) return;
     const inputs = form.querySelectorAll('input, select, textarea');
-    inputs[0].value = visitante;
-    if (inputs[1]) inputs[1].value = idResidencia;
-    if (inputs[2]) inputs[2].value = idRol;
-    if (inputs[3]) inputs[3].value = fechaIngreso;
-    if (inputs[4]) inputs[4].value = fechaSalida;
-    if (inputs[5]) inputs[5].value = idEstado;
+    inputs[0].value = idPersona;   // mostrar cédula del visitante
+    inputs[0].readOnly = true;     // no editable al actualizar
+    inputs[0].style.opacity = '0.65';
+    inputs[0].style.cursor = 'not-allowed';
+    inputs[1].value = visitante;
+    if (inputs[2]) inputs[2].value = idResidencia;
+    if (inputs[3]) inputs[3].value = idRol;
+    if (inputs[4]) inputs[4].value = fechaIngreso;
+    if (inputs[5]) inputs[5].value = fechaSalida;
+    if (inputs[6]) inputs[6].value = idEstado;
     form.dataset.editId = id;
     const titulo = form.closest('.bloque-formulario').querySelector('h3');
     if (titulo) titulo.textContent = '✎ Editar Visitante';
@@ -157,7 +165,7 @@ async function guardarVisita(e) {
     const editId = form.dataset.editId;
 
     if (editId) {
-        const idEstado = parseInt(inputs[5]?.value ?? 0);
+        const idEstado = parseInt(inputs[6]?.value ?? 0);
         if (!idEstado) { mostrarMensaje(form.closest('.bloque-formulario'), 'Seleccione un estado.', true); return; }
         if (![4,5,6].includes(idEstado)) {
             mostrarMensaje(form.closest('.bloque-formulario'), 'Solo puede usar estados: Adentro, Salida o Vetado.', true);
@@ -171,14 +179,25 @@ async function guardarVisita(e) {
         return;
     }
 
+    const cedula = inputs[0].value.trim();
+
+    if (cedula) {
+        const check = await apiGet('verificar_cedula', { cedula });
+        if (!check.disponible) {
+            mostrarMensaje(form.closest('.bloque-formulario'), `La cédula '${cedula}' ya está registrada.`, true);
+            return;
+        }
+    }
+
     const data = {
         accion:           'insertar_visita',
-        nombre_visitante: inputs[0].value.trim(),
-        id_residencia:    inputs[1].value,
-        id_rol:           inputs[2].value,
-        fecha_ingreso:    inputs[3].value,
-        fecha_salida:     inputs[4].value,
-        id_estado:        inputs[5].value,
+        cedula:           cedula,
+        nombre_visitante: inputs[1].value.trim(),
+        id_residencia:    inputs[2].value,
+        id_rol:           inputs[3].value,
+        fecha_ingreso:    inputs[4].value,
+        fecha_salida:     inputs[5].value,
+        id_estado:        inputs[6].value,
         id_persona:       0,
     };
 
@@ -201,6 +220,11 @@ function cancelarEdicionVisita() {
     const form = document.getElementById('form-visitante');
     if (!form) return;
     form.reset(); delete form.dataset.editId;
+    // Restaurar campo cédula si fue bloqueado en modo edición
+    const inputs = form.querySelectorAll('input, select, textarea');
+    inputs[0].removeAttribute('readonly');
+    inputs[0].style.opacity = '';
+    inputs[0].style.cursor  = '';
     resetFormTitulo(form, 'Registrar Visitante');
     ocultarCancelarEdicion(form);
     form.querySelector('button[type="submit"]').textContent = 'Guardar';

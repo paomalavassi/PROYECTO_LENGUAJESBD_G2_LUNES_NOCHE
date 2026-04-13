@@ -596,10 +596,10 @@ switch ($accion) {
 
         $idPersona = currVal('FIDE_PERSONAS_SEQ', $conn);
 
-        execUpdate(
+        execProc(
             $conn,
-            "UPDATE FIDE_PERSONAS_TB SET USUARIO = :u, CONTRASENA = :c WHERE ID_PERSONA = :id",
-            [':u' => $usuario, ':c' => $contrasena, ':id' => $idPersona]
+            "BEGIN $pkg.FIDE_PERSONAS_CREDENCIALES_ACTUALIZAR_SP(:p1,:p2,:p3); END;",
+            [':p1' => $idPersona, ':p2' => $usuario, ':p3' => $contrasena]
         );
 
         if ($tel)    execProc($conn, "BEGIN $pkg.FIDE_TELEFONOS_INSERTAR_SP(:p1,:p2,:p3); END;", [':p1' => $idPersona, ':p2' => $tel, ':p3' => 1]);
@@ -844,16 +844,16 @@ switch ($accion) {
         }
 
         if ($contrasena) {
-            execUpdate(
+            execProc(
                 $conn,
-                "UPDATE FIDE_PERSONAS_TB SET USUARIO = :u, CONTRASENA = :c WHERE ID_PERSONA = :id",
-                [':u' => $usuario, ':c' => $contrasena, ':id' => $id]
+                "BEGIN $pkg.FIDE_PERSONAS_CREDENCIALES_ACTUALIZAR_SP(:p1,:p2,:p3); END;",
+                [':p1' => $id, ':p2' => $usuario, ':p3' => $contrasena]
             );
         } else {
-            execUpdate(
+            execProc(
                 $conn,
-                "UPDATE FIDE_PERSONAS_TB SET USUARIO = :u WHERE ID_PERSONA = :id",
-                [':u' => $usuario, ':id' => $id]
+                "BEGIN $pkg.FIDE_PERSONAS_CREDENCIALES_ACTUALIZAR_SP(:p1,:p2,:p3); END;",
+                [':p1' => $id, ':p2' => $usuario, ':p3' => null]
             );
         }
 

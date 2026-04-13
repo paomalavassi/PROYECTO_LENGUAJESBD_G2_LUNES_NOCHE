@@ -91,6 +91,12 @@ function cancelarEdicion(form) {
     delete form.dataset.editId;
     delete form.dataset.tipoEvento;
     delete form.dataset.tipoEspacio;
+    // Restaurar campos que pudieran haberse bloqueado (ej: cédula en modo edición)
+    form.querySelectorAll('input[readonly]').forEach(i => {
+        i.removeAttribute('readonly');
+        i.style.opacity = '';
+        i.style.cursor  = '';
+    });
     form.querySelector('button[type="submit"]').textContent = 'Guardar';
     const h3 = form.closest('.bloque-formulario')?.querySelector('h3');
     if (h3) h3.textContent = h3.dataset.original ?? 'Agregar';
@@ -143,14 +149,18 @@ async function cargarGuardias() {
 function editarGuardia(id, nombre, pat, mat, tel, correo, usuario, idEstado) {
     const form = document.querySelector('#guardias .bloque-formulario form');
     const inputs = form.querySelectorAll('input, select');
-    inputs[0].value = nombre;
-    inputs[1].value = pat;
-    inputs[2].value = mat;
-    inputs[3].value = tel;
-    inputs[4].value = correo;
-    inputs[5].value = usuario;
-    inputs[6].value = '';
-    if (inputs[7]) inputs[7].value = idEstado;
+    inputs[0].value = id;          // mostrar cédula del guardia
+    inputs[0].readOnly = true;     // no editable al actualizar
+    inputs[0].style.opacity = '0.65';
+    inputs[0].style.cursor = 'not-allowed';
+    inputs[1].value = nombre;
+    inputs[2].value = pat;
+    inputs[3].value = mat;
+    inputs[4].value = tel;
+    inputs[5].value = correo;
+    inputs[6].value = usuario;
+    inputs[7].value = '';
+    if (inputs[8]) inputs[8].value = idEstado;
     form.dataset.editId = id;
     activarModoEdicion(form, '✎ Editar Guardia');
 }
@@ -164,14 +174,15 @@ async function guardarGuardia(e) {
     const data = {
         accion: editId ? 'actualizar_guardia' : 'insertar_guardia',
         id: editId ?? '',
-        nombre: inputs[0].value.trim(),
-        apellido_paterno: inputs[1].value.trim(),
-        apellido_materno: inputs[2].value.trim(),
-        telefono: inputs[3].value.trim(),
-        correo: inputs[4].value.trim(),
-        usuario: inputs[5].value.trim(),
-        contrasena: inputs[6].value.trim(),
-        id_estado: inputs[7]?.value ?? 1,
+        cedula: inputs[0].value.trim(),
+        nombre: inputs[1].value.trim(),
+        apellido_paterno: inputs[2].value.trim(),
+        apellido_materno: inputs[3].value.trim(),
+        telefono: inputs[4].value.trim(),
+        correo: inputs[5].value.trim(),
+        usuario: inputs[6].value.trim(),
+        contrasena: inputs[7].value.trim(),
+        id_estado: inputs[8]?.value ?? 1,
     };
 
     if (!data.nombre) { mostrarMensaje(form.closest('.bloque-formulario'), 'El nombre es requerido.', true); return; }
@@ -179,6 +190,14 @@ async function guardarGuardia(e) {
     if (!editId && !data.contrasena) {
         mostrarMensaje(form.closest('.bloque-formulario'), 'La contrasena es requerida al crear un guardia.', true);
         return;
+    }
+
+    if (!editId && data.cedula) {
+        const check = await apiGet('verificar_cedula', { cedula: data.cedula });
+        if (!check.disponible) {
+            mostrarMensaje(form.closest('.bloque-formulario'), `La cédula '${data.cedula}' ya está registrada.`, true);
+            return;
+        }
     }
 
     const r = await api(data);
@@ -230,10 +249,14 @@ async function cargarResidentes() {
 function editarResidente(id, nombre, pat, mat, tel, correo, idResidencia, idEstado) {
     const form = document.querySelector('#residentes .bloque-formulario form');
     const inputs = form.querySelectorAll('input, select');
-    inputs[0].value = nombre; inputs[1].value = pat; inputs[2].value = mat;
-    inputs[3].value = tel; inputs[4].value = correo;
-    if (inputs[5]) inputs[5].value = idResidencia;
-    if (inputs[6]) inputs[6].value = idEstado;
+    inputs[0].value = id;          // mostrar cédula del residente
+    inputs[0].readOnly = true;     // no editable al actualizar
+    inputs[0].style.opacity = '0.65';
+    inputs[0].style.cursor = 'not-allowed';
+    inputs[1].value = nombre; inputs[2].value = pat; inputs[3].value = mat;
+    inputs[4].value = tel; inputs[5].value = correo;
+    if (inputs[6]) inputs[6].value = idResidencia;
+    if (inputs[7]) inputs[7].value = idEstado;
     form.dataset.editId = id;
     activarModoEdicion(form, '✎ Editar Residente');
 }
@@ -246,15 +269,25 @@ async function guardarResidente(e) {
     const data = {
         accion: editId ? 'actualizar_residente' : 'insertar_residente',
         id: editId ?? '',
-        nombre: inputs[0].value.trim(),
-        apellido_paterno: inputs[1].value.trim(),
-        apellido_materno: inputs[2].value.trim(),
-        telefono: inputs[3].value.trim(),
-        correo: inputs[4].value.trim(),
-        id_residencia: inputs[5]?.value ?? '',
-        id_estado: inputs[6]?.value ?? 1,
+        cedula: inputs[0].value.trim(),
+        nombre: inputs[1].value.trim(),
+        apellido_paterno: inputs[2].value.trim(),
+        apellido_materno: inputs[3].value.trim(),
+        telefono: inputs[4].value.trim(),
+        correo: inputs[5].value.trim(),
+        id_residencia: inputs[6]?.value ?? '',
+        id_estado: inputs[7]?.value ?? 1,
     };
     if (!data.nombre) { mostrarMensaje(form.closest('.bloque-formulario'), 'El nombre es requerido.', true); return; }
+
+    if (!editId && data.cedula) {
+        const check = await apiGet('verificar_cedula', { cedula: data.cedula });
+        if (!check.disponible) {
+            mostrarMensaje(form.closest('.bloque-formulario'), `La cédula '${data.cedula}' ya está registrada.`, true);
+            return;
+        }
+    }
+
     const r = await api(data);
     if (r.error) {
         mostrarMensaje(form.closest('.bloque-formulario'), 'Error: ' + r.mensaje, true);
